@@ -13,7 +13,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.cuda.amp import GradScaler, autocast
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data import DataLoader, Dataset, random_split
@@ -108,6 +107,23 @@ def load_clip_components(model_name_or_path: str, cache_dir: Optional[Path], loc
     processor = CLIPProcessor.from_pretrained(model_source, **load_kwargs)
     base = CLIPModel.from_pretrained(model_source, **load_kwargs)
     return processor, base
+
+
+def ensure_supported_cuda_device(device: torch.device):
+    if device.type != "cuda":
+        return
+
+    device_cc = torch.cuda.get_device_capability(device)
+    device_arch = f"sm_{device_cc[0]}{device_cc[1]}"
+    supported_arches = set(torch.cuda.get_arch_list())
+
+    if supported_arches and device_arch not in supported_arches:
+        supported = ", ".join(sorted(supported_arches))
+        raise RuntimeError(
+            "Installed PyTorch build is not compatible with the active GPU. "
+            f"Found {torch.cuda.get_device_name(device)} ({device_arch}), but this build only supports: {supported}. "
+            "Use Python 3.10 with torch==2.6.0, torchvision==0.21.0, and torchaudio==2.6.0 from the PyTorch CUDA 12.4 index."
+        )
 
 
 def directory_has_shards(data_root: Path, shard_glob: str) -> bool:
@@ -567,7 +583,7 @@ def train_one_epoch(
         ids = batch["input_ids"].to(device, non_blocking=True)
         msk = batch["attention_mask"].to(device, non_blocking=True)
 
-        with autocast():
+        with torch.amp.autocast(device_type=device.type, enabled=device.type == "cuda"):
             out  = model(pixel_values=pv, input_ids=ids, attention_mask=msk, return_loss=False)
             loss = loss_fn(out.image_embeds, out.text_embeds) / grad_accum
 
@@ -619,7 +635,7 @@ def validate(model, loader, loss_fn, device, writer, epoch):
         ids = batch["input_ids"].to(device, non_blocking=True)
         msk = batch["attention_mask"].to(device, non_blocking=True)
 
-        with autocast():
+        with torch.amp.autocast(device_type=device.type, enabled=device.type == "cuda"):
             out  = model(pixel_values=pv, input_ids=ids, attention_mask=msk, return_loss=False)
             loss = loss_fn(out.image_embeds, out.text_embeds)
 
@@ -720,6 +736,7 @@ def main():
     np.random.seed(args.seed)
 
     device     = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    ensure_supported_cuda_device(device)
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     log.info("Device: %s", device)
@@ -824,7 +841,7 @@ def main():
     scheduler   = cosine_schedule_with_warmup(optimizer, args.warmup_steps, total_steps)
 
     # ── 5. AMP ────────────────────────────────────────────────────────────────
-    scaler = GradScaler(enabled=device.type == "cuda")
+    scaler = torch.amp.GradScaler("cuda", enabled=device.type == "cuda")
 
     # ── 6. TensorBoard ────────────────────────────────────────────────────────
     writer = SummaryWriter(log_dir=str(output_dir / "runs"))

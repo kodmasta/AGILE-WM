@@ -61,7 +61,9 @@ echo "Local shard dir: $LOCAL_DATA_DIR"
 
 extra_args=("$@")
 
-uv run python CLIP_finetune.py \
+uv sync --python 3.10
+
+uv run --python 3.10 python CLIP_finetune.py \
   --data_root "$DATA_ROOT" \
   --output_dir "$OUTPUT_DIR" \
   --hf_cache_dir "$TRANSFORMERS_CACHE" \

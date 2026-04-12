@@ -2,17 +2,27 @@
 name = "agile-wm"
 version = "0.1.0"
 description = "AGILE-WM captioning and data processing utilities"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.11"
 dependencies = [
     "accelerate",
     "numpy",
     "peft",
     "pillow",
     "tensorboard",
-    "torch",
-    "torchaudio",
-    "torchvision",
+    "torch==2.6.0",
+    "torchaudio==2.6.0",
+    "torchvision==0.21.0",
     "tqdm",
     "transformers",
     "webdataset",
 ]
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu124" }]
+torchaudio = [{ index = "pytorch-cu124" }]
+torchvision = [{ index = "pytorch-cu124" }]
