@@ -5,7 +5,10 @@ description = "AGILE-WM captioning and data processing utilities"
 requires-python = ">=3.10"
 dependencies = [
     "accelerate",
+    "numpy",
+    "peft",
     "pillow",
+    "tensorboard",
     "torch",
     "torchaudio",
     "torchvision",
