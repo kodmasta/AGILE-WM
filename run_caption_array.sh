@@ -2,11 +2,12 @@
 #SBATCH --job-name=qwen_cap
 #SBATCH --output=logs/qwen_cap_%A_%a.out
 #SBATCH --error=logs/qwen_cap_%A_%a.err
-#SBATCH --array=0
+#SBATCH --array=1-19%4
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=2
-#SBATCH --mem=32G
-#SBATCH --time=04:00:00
+#SBATCH --mem=24G
+#SBATCH --time=03:00:00
+#SBATCH --partition=main
 
 set -euo pipefail
 
@@ -16,6 +17,10 @@ cd ~/CODE/AGILE-WM
 module load python/3.10
 
 SHARD_PATH=$(sed -n "$((SLURM_ARRAY_TASK_ID+1))p" shards.txt)
+if [[ -z "$SHARD_PATH" ]]; then
+  echo "No shard found for SLURM_ARRAY_TASK_ID=$SLURM_ARRAY_TASK_ID" >&2
+  exit 1
+fi
 SHARD_BASENAME=$(basename "$SHARD_PATH")
 
 MODEL_SRC="$SCRATCH/qwen3-vl-8b-instruct"

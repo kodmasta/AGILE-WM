@@ -44,6 +44,7 @@ log = logging.getLogger(__name__)
 SCRIPT_DIR = Path(__file__).resolve().parent
 LATEST_CHECKPOINT_POINTER = "checkpoint_latest.txt"
 DEFAULT_CLUSTER_DATASET = Path("/network/scratch/h/hengh/my_dataset")
+DEFAULT_SHARD_GLOB = "shard-*-caption-*.tar"
 
 
 def resolve_path(path_like: Optional[str]) -> Optional[Path]:
@@ -63,7 +64,17 @@ def cluster_scratch_root() -> Path:
 
 
 def default_data_root() -> Path:
-    return (cluster_scratch_root() / "my_dataset").resolve()
+    candidates = [
+        (cluster_scratch_root() / "my_dataset" / "frame-caption-pairs").resolve(),
+        (cluster_scratch_root() / "my_dataset" / "outputs").resolve(),
+        (cluster_scratch_root() / "my_dataset").resolve(),
+        (SCRIPT_DIR / "outputs").resolve(),
+    ]
+    for candidate in candidates:
+        resolved = resolve_data_root(candidate, DEFAULT_SHARD_GLOB)
+        if directory_has_shards(resolved, DEFAULT_SHARD_GLOB):
+            return resolved
+    return candidates[0]
 
 
 def default_output_dir() -> Path:
@@ -97,6 +108,46 @@ def load_clip_components(model_name_or_path: str, cache_dir: Optional[Path], loc
     processor = CLIPProcessor.from_pretrained(model_source, **load_kwargs)
     base = CLIPModel.from_pretrained(model_source, **load_kwargs)
     return processor, base
+
+
+def directory_has_shards(data_root: Path, shard_glob: str) -> bool:
+    return data_root.is_dir() and any(data_root.glob(shard_glob))
+
+
+def resolve_data_root(data_root: Path, shard_glob: str) -> Path:
+    if directory_has_shards(data_root, shard_glob):
+        return data_root
+
+    nested_outputs = data_root / "outputs"
+    if directory_has_shards(nested_outputs, shard_glob):
+        return nested_outputs
+
+    return data_root
+
+
+def discover_shard_directories(primary_root: Path, shard_glob: str) -> List[Path]:
+    candidates = [
+        primary_root,
+        primary_root / "outputs",
+        primary_root.parent if primary_root.parent != primary_root else None,
+        SCRIPT_DIR / "outputs",
+        (cluster_scratch_root() / "my_dataset" / "frame-caption-pairs").resolve(),
+        (cluster_scratch_root() / "my_dataset" / "outputs").resolve(),
+        (cluster_scratch_root() / "my_dataset").resolve(),
+    ]
+
+    seen = set()
+    matches = []
+    for candidate in candidates:
+        if candidate is None:
+            continue
+        candidate = candidate.resolve()
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        if directory_has_shards(candidate, shard_glob):
+            matches.append(candidate)
+    return matches
 
 
 def stage_shards_to_local(data_root: Path, shard_glob: str, local_data_dir: Path) -> Path:
@@ -228,7 +279,7 @@ class CarRacingCLIPDataset(Dataset):
     """
 
     # Shard glob 
-    DEFAULT_GLOB = "shard-*-caption-*.tar"
+    DEFAULT_GLOB = DEFAULT_SHARD_GLOB
 
     def __init__(
         self,
@@ -244,12 +295,21 @@ class CarRacingCLIPDataset(Dataset):
         # Each entry: (tar_path_str, png_member_name, caption_str)
         self.index: List[Tuple[str, str, str]] = []
 
-        data_root   = Path(data_root)
+        data_root   = resolve_data_root(Path(data_root), shard_glob)
         shard_paths = sorted(data_root.glob(shard_glob))
         if not shard_paths:
-            raise FileNotFoundError(
+            discovered_roots = discover_shard_directories(data_root, shard_glob)
+            message = (
                 f"No shards found matching '{shard_glob}' in {data_root}\n"
                 f"Expected files like: shard-00000-caption-00000.tar"
+            )
+            if not data_root.exists():
+                message += "\nConfigured data root does not exist."
+            if discovered_roots:
+                discovered = "\n".join(f"- {path}" for path in discovered_roots)
+                message += f"\nAvailable shard directories:\n{discovered}"
+            raise FileNotFoundError(
+                message
             )
 
         log.info("Indexing %d shards in %s …", len(shard_paths), data_root)
@@ -592,8 +652,8 @@ def parse_args():
 
     # Data  (tar shard format)
     p.add_argument("--data_root",   default=None,
-                   help="Folder containing caption shard .tar files. Defaults to $SCRATCH/my_dataset on Mila.")
-    p.add_argument("--shard_glob",  default="shard-*-caption-*.tar",
+                   help="Folder containing caption shard .tar files. Defaults to the first available shard directory among Mila scratch frame-caption-pairs, Mila scratch outputs, a nested outputs/ folder, or this repo's outputs/.")
+    p.add_argument("--shard_glob",  default=DEFAULT_SHARD_GLOB,
                    help="Glob to find shards, e.g. 'shard_*.tar'")
     p.add_argument("--caption_key", default="caption",
                    help="JSON key for the caption, e.g. 'caption' or 'text'")
@@ -640,7 +700,10 @@ def parse_args():
     p.add_argument("--save_every", type=int, default=1)
 
     args = p.parse_args()
-    args.data_root = resolve_path(args.data_root) if args.data_root else default_data_root()
+    if args.data_root:
+        args.data_root = resolve_data_root(resolve_path(args.data_root), args.shard_glob)
+    else:
+        args.data_root = default_data_root()
     args.local_data_dir = resolve_path(args.local_data_dir)
     args.hf_cache_dir = resolve_path(args.hf_cache_dir) if args.hf_cache_dir else default_hf_cache_dir()
     args.output_dir = resolve_path(args.output_dir) if args.output_dir else default_output_dir()

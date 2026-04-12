@@ -1,0 +1,10 @@
+{
+  "source_shard": "/tmp/shard-00006.tar",
+  "output_dir": "outputs",
+  "output_shards": [
+    "outputs/shard-00006-caption-00000.tar"
+  ],
+  "samples_written": 1000,
+  "shard_size": 1000,
+  "max_new_tokens": 60
+}
