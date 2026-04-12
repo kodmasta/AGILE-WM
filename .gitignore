@@ -1,0 +1,45 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# VS Code settings
+.vscode/
+
+# macOS system files
+.DS_Store
+
+# Python egg/dist files
+*.egg-info/
+dist/
+build/
+
+# Results, logs, and cache
+*.log
+*.out
+*.tmp
+*.cache/
+*.pkl
+
+# Model/data outputs
+*.npz
+*.h5
+*.ckpt
+
+# Folders to ignore
+rollouts/
+rollout_videos/
+webdataset_frames/
+qwen3-vl-8b-instruct/
+
