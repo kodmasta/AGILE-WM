@@ -2,7 +2,7 @@
 #SBATCH --job-name=qwen_cap
 #SBATCH --output=logs/qwen_cap_%A_%a.out
 #SBATCH --error=logs/qwen_cap_%A_%a.err
-#SBATCH --array=0-59%6
+#SBATCH --array=0
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=32G
