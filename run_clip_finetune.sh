@@ -42,4 +42,5 @@ uv run python CLIP_finetune.py \
   --local_data_dir "$LOCAL_DATA_DIR" \
   --save_every 1 \
   --num_workers 2 \
+  --resume
   "$@"
