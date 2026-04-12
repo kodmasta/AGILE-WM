@@ -12,7 +12,7 @@ from transformers import AutoProcessor, Qwen3VLForConditionalGeneration
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 DEFAULT_MODEL_DIR = SCRIPT_DIR / "qwen3-vl-8b-instruct"
-MAX_NEW_TOKENS = 40
+MAX_NEW_TOKENS = 60
 
 PROMPT = """
 You are labeling a 64x64 top-down racing game frame.
