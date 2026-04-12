@@ -6,11 +6,11 @@
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32G
-#SBATCH --time=08:00:00
+#SBATCH --time=03:00:00
 
 set -euo pipefail
 
-cd ~/projects/AGILE-WM/qwen_captioning
+cd ~/CODE/AGILE-WM
 source venv/bin/activate
 
 mkdir -p logs
@@ -18,7 +18,6 @@ mkdir -p outputs
 
 SHARD_PATH=$(sed -n "$((SLURM_ARRAY_TASK_ID+1))p" shards.txt)
 SHARD_BASENAME=$(basename "$SHARD_PATH")
-SHARD_NAME="${SHARD_BASENAME%.tar}"
 
 MODEL_SRC="$SCRATCH/qwen3-vl-8b-instruct"
 
@@ -30,5 +29,8 @@ cp "$SHARD_PATH" "$SHARD_DST"
 echo "Running captioning..."
 python caption_shard.py \
   --shard_path "$SHARD_DST" \
-  --output_path "outputs/${SHARD_NAME}.jsonl" \
-  --model_dir "$MODEL_SRC"
+  --output_dir "outputs" \
+  --model_dir "$MODEL_SRC" \
+  --shard_size 1000
+
+  
