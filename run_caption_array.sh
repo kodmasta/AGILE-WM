@@ -4,17 +4,16 @@
 #SBATCH --error=logs/qwen_cap_%A_%a.err
 #SBATCH --array=0-59%6
 #SBATCH --gres=gpu:1
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=2
 #SBATCH --mem=32G
-#SBATCH --time=03:00:00
+#SBATCH --time=04:00:00
 
 set -euo pipefail
 
-cd ~/CODE/AGILE-WM
-source venv/bin/activate
+export PATH="$HOME/.local/bin:$PATH"
 
-mkdir -p logs
-mkdir -p outputs
+cd ~/CODE/AGILE-WM
+module load python/3.10
 
 SHARD_PATH=$(sed -n "$((SLURM_ARRAY_TASK_ID+1))p" shards.txt)
 SHARD_BASENAME=$(basename "$SHARD_PATH")
@@ -27,7 +26,7 @@ echo "Copying shard to local disk..."
 cp "$SHARD_PATH" "$SHARD_DST"
 
 echo "Running captioning..."
-python caption_shard.py \
+uv run python caption_shard.py \
   --shard_path "$SHARD_DST" \
   --output_dir "outputs" \
   --model_dir "$MODEL_SRC" \

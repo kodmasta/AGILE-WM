@@ -1,0 +1,15 @@
+[project]
+name = "agile-wm"
+version = "0.1.0"
+description = "AGILE-WM captioning and data processing utilities"
+requires-python = ">=3.10"
+dependencies = [
+    "accelerate",
+    "pillow",
+    "torch",
+    "torchaudio",
+    "torchvision",
+    "tqdm",
+    "transformers",
+    "webdataset",
+]
