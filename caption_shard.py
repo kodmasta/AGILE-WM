@@ -16,7 +16,7 @@ DEFAULT_MODEL_DIR = SCRIPT_DIR / "qwen3-vl-8b-instruct"
 MAX_NEW_TOKENS = 70
 
 PROMPT = """
-Describe this 64x64 top-down racing game frame in one short sentence.
+Describe this 64x64 top-down racing game frame in one sentence.
 
 Focus on:
 - the road shape and direction
@@ -88,12 +88,43 @@ def ensure_supported_cuda_device() -> None:
     device_arch = f"sm_{device_cc[0]}{device_cc[1]}"
     supported_arches = set(torch.cuda.get_arch_list())
 
-    if supported_arches and device_arch not in supported_arches:
+    def build_supports_device() -> bool:
+        if not supported_arches:
+            return True
+        if device_arch in supported_arches:
+            return True
+
+        supported_ccs: list[tuple[int, int]] = []
+        for arch in supported_arches:
+            if not arch.startswith("sm_"):
+                continue
+            suffix = arch.removeprefix("sm_")
+            if not suffix.isdigit():
+                continue
+            supported_ccs.append((int(suffix[:-1]), int(suffix[-1])))
+
+        return any(
+            major == device_cc[0] and minor <= device_cc[1]
+            for major, minor in supported_ccs
+        )
+
+    if not build_supports_device():
         supported = ", ".join(sorted(supported_arches))
+        if device_cc[0] == 7:
+            recommendation = (
+                "Install a CUDA 12.4 PyTorch stack for sm_7x GPUs, for example "
+                "torch==2.6.0, torchvision==0.21.0, and torchaudio==2.6.0, "
+                "or use run_caption_array.sh to install a compatible build automatically."
+            )
+        else:
+            recommendation = (
+                "Install a PyTorch build that supports this GPU, or use run_caption_array.sh "
+                "to install a compatible build automatically."
+            )
         raise RuntimeError(
             "Installed PyTorch build is not compatible with the active GPU. "
             f"Found {torch.cuda.get_device_name(device)} ({device_arch}), but this build only supports: {supported}. "
-            "Use Python 3.10 with torch==2.6.0, torchvision==0.21.0, and torchaudio==2.6.0 from the PyTorch CUDA 12.4 index."
+            f"{recommendation}"
         )
 
 
