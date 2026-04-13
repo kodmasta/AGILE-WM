@@ -12,32 +12,30 @@ from transformers import AutoProcessor, Qwen3VLForConditionalGeneration
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 DEFAULT_MODEL_DIR = SCRIPT_DIR / "qwen3-vl-8b-instruct"
-MAX_NEW_TOKENS = 60
+MAX_NEW_TOKENS = 70
 
 PROMPT = """
-You are labeling a 64x64 top-down racing game frame.
-Choose exactly one value for each field from the allowed options below.
+Describe this 64x64 top-down racing game frame in one short sentence.
 
-road shape: straight, gentle left, gentle right, sharp left, sharp right
-car position: center, left, right, far left, far right
-surface: asphalt, grass, mixed
-heading alignment: aligned, slightly left, slightly right, misaligned
-action steer: left, right, neutral
-skid marks visible: yes, no
-transition: stable, moving left, moving right, recovering, drifting offroad, entering turn, exiting turn
+Focus on:
+- the road shape and direction
+- where the car is on the road
+- whether the car looks aligned with the road or turning
+- whether it is on asphalt, grass, or partly offroad
+- any obvious motion cues like drifting, recovering, entering a turn, or skid marks
 
-Output format:
-road shape=<value>, car position=<value>, surface=<value>, heading alignment=<value>, action steer=<value>, skid marks visible=<value>, transition=<value>
+Requirements:
+- Output only one concise caption
+- Use natural language, not labels
+- Mention the most important driving situation first
+- Prefer concrete visual descriptions over generic ones
+- If uncertain, describe the closest visible situation
 
-Rules:
-- Analyze the road geometry for road shape.
-- Output exactly one value per field.
-- Use only the allowed labels.
-- Do not explain.
-- Do not add any extra words.
-- If uncertain, choose the closest label.
+Example style:
+car near the left edge of a sharp left turn, slightly misaligned, with skid marks as it enters the corner
+car centered on a straight asphalt section, aligned with the road and driving steadily
+car drifting off the right side of a gentle right curve, partly on grass and recovering
 """.strip()
-
 
 def log(msg: str) -> None:
     print(f"[{time.strftime('%H:%M:%S')}] {msg}", flush=True)
