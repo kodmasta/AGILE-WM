@@ -1,0 +1,167 @@
+[=== Module python/3.10 loaded ===]
+Resolved 66 packages in 2ms
+Checked 64 packages in 87ms
+18:30:10  INFO      Device: cuda
+18:30:10  INFO      Using 9 shards staged in /tmp/clip_caption_shards (9 copied this run)
+18:30:10  INFO      Data root: /tmp/clip_caption_shards
+18:30:10  INFO      Output dir: /network/scratch/h/hengh/AGILE-WM/clip_finetune
+18:30:10  INFO      HF cache dir: /network/scratch/h/hengh/hf_cache
+18:30:10  INFO      Loading CLIP: openai/clip-vit-base-patch32
+18:30:10  INFO      HTTP Request: GET https://huggingface.co/api/models/openai/clip-vit-base-patch32/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+18:30:10  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+18:30:10  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/chat_template.json "HTTP/1.1 404 Not Found"
+18:30:10  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/chat_template.jinja "HTTP/1.1 404 Not Found"
+18:30:10  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/audio_tokenizer_config.json "HTTP/1.1 404 Not Found"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+18:30:10  WARNING   Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+18:30:11  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+18:30:11  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+18:30:11  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/preprocessor_config.json "HTTP/1.1 200 OK"
+18:30:11  INFO      HTTP Request: GET https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/preprocessor_config.json "HTTP/1.1 200 OK"
+18:30:11  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+18:30:11  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+18:30:11  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/preprocessor_config.json "HTTP/1.1 200 OK"
+18:30:11  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+18:30:11  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/config.json "HTTP/1.1 200 OK"
+18:30:11  INFO      HTTP Request: GET https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/config.json "HTTP/1.1 200 OK"
+18:30:11  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+18:30:11  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/tokenizer_config.json "HTTP/1.1 200 OK"
+18:30:11  INFO      HTTP Request: GET https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/tokenizer_config.json "HTTP/1.1 200 OK"
+18:30:11  INFO      HTTP Request: GET https://huggingface.co/api/models/openai/clip-vit-base-patch32/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+18:30:11  INFO      HTTP Request: GET https://huggingface.co/api/models/openai/clip-vit-base-patch32/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+18:30:11  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/vocab.json "HTTP/1.1 307 Temporary Redirect"
+18:30:11  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/vocab.json "HTTP/1.1 200 OK"
+18:30:11  INFO      HTTP Request: GET https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/vocab.json "HTTP/1.1 200 OK"
+18:30:11  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/merges.txt "HTTP/1.1 307 Temporary Redirect"
+18:30:11  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/merges.txt "HTTP/1.1 200 OK"
+18:30:11  INFO      HTTP Request: GET https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/merges.txt "HTTP/1.1 200 OK"
+18:30:11  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/tokenizer.json "HTTP/1.1 307 Temporary Redirect"
+18:30:11  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/tokenizer.json "HTTP/1.1 200 OK"
+18:30:11  INFO      HTTP Request: GET https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/tokenizer.json "HTTP/1.1 200 OK"
+18:30:11  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/added_tokens.json "HTTP/1.1 404 Not Found"
+18:30:11  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/special_tokens_map.json "HTTP/1.1 307 Temporary Redirect"
+18:30:12  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/special_tokens_map.json "HTTP/1.1 200 OK"
+18:30:12  INFO      HTTP Request: GET https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/special_tokens_map.json "HTTP/1.1 200 OK"
+18:30:12  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+18:30:12  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/config.json "HTTP/1.1 200 OK"
+18:30:12  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+18:30:12  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+18:30:12  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/config.json "HTTP/1.1 200 OK"
+18:30:12  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/model.safetensors "HTTP/1.1 404 Not Found"
+18:30:12  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/model.safetensors.index.json "HTTP/1.1 404 Not Found"
+18:30:12  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/pytorch_model.bin "HTTP/1.1 302 Found"
+18:30:12  INFO      HTTP Request: GET https://huggingface.co/api/models/openai/clip-vit-base-patch32/xet-read-token/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268 "HTTP/1.1 200 OK"
+18:30:15  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/model.safetensors "HTTP/1.1 404 Not Found"
+18:30:15  INFO      HTTP Request: GET https://huggingface.co/api/models/openai/clip-vit-base-patch32 "HTTP/1.1 200 OK"
+18:30:15  INFO      HTTP Request: GET https://huggingface.co/api/models/openai/clip-vit-base-patch32/commits/main "HTTP/1.1 200 OK"
+18:30:15  INFO      HTTP Request: GET https://huggingface.co/api/models/openai/clip-vit-base-patch32/discussions?p=0 "HTTP/1.1 200 OK"
+18:30:15  INFO      HTTP Request: GET https://huggingface.co/api/models/openai/clip-vit-base-patch32/commits/refs%2Fpr%2F66 "HTTP/1.1 200 OK"
+18:30:15  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/refs%2Fpr%2F66/model.safetensors.index.json "HTTP/1.1 404 Not Found"
+18:30:15  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/refs%2Fpr%2F66/model.safetensors "HTTP/1.1 302 Found"
+18:30:15  INFO      HTTP Request: GET https://huggingface.co/api/models/openai/clip-vit-base-patch32/xet-read-token/c237dc49a33fc61debc9276459120b7eac67e7ef "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights: 100%|██████████| 398/398 [00:00<00:00, 17561.39it/s]
+[1mCLIPModel LOAD REPORT[0m from: openai/clip-vit-base-patch32
+Key                                  | Status     |  | 
+-------------------------------------+------------+--+-
+text_model.embeddings.position_ids   | UNEXPECTED |  | 
+vision_model.embeddings.position_ids | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+18:30:17  INFO      Indexing 9 shards in /tmp/clip_caption_shards …
+18:30:19  INFO      Dataset ready — 9000 pairs from 9 shards  (0 skipped)
+18:30:19  INFO      Train: 8100  |  Val: 900
+18:30:19  WARNING   --resume set but no checkpoint found – starting fresh
+18:30:19  INFO      Starting LoRA fine-tuning  |  epochs=10  batch=64  lr=2.00e-04  lora_r=16  lora_alpha=32  target=vision_and_text  device=cuda
+18:30:30  INFO      Epoch 0  step    0/126  loss=4.1641  lr=2.00e-06  temp=14.286
+18:33:41  INFO      Epoch 0  step   50/126  loss=3.7012  lr=1.02e-04  temp=14.313
+18:36:52  INFO      Epoch 0  step  100/126  loss=3.4899  lr=2.00e-04  temp=14.342
+18:39:23  INFO      Val epoch=0  loss=3.0921  i2t@1=0.6%  i2t@5=3.0%  t2i@1=0.6%  t2i@5=2.9%
+18:39:23  INFO      Epoch 0  train=3.6588  val=3.0921  time=543s
+18:39:23  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+18:39:23  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/config.json "HTTP/1.1 200 OK"
+18:39:23  INFO      New best checkpoint  →  /network/scratch/h/hengh/AGILE-WM/clip_finetune/checkpoint_best
+18:39:23  INFO      Checkpoint saved  →  /network/scratch/h/hengh/AGILE-WM/clip_finetune/lora_epoch_0000
+18:39:31  INFO      Epoch 1  step    0/126  loss=3.3089  lr=2.00e-04  temp=14.380
+18:42:40  INFO      Epoch 1  step   50/126  loss=3.1225  lr=1.98e-04  temp=14.434
+18:45:52  INFO      Epoch 1  step  100/126  loss=2.9864  lr=1.94e-04  temp=14.493
+18:48:27  INFO      Val epoch=1  loss=2.9003  i2t@1=1.2%  i2t@5=5.6%  t2i@1=0.9%  t2i@5=4.1%
+18:48:27  INFO      Epoch 1  train=3.1361  val=2.9003  time=544s
+18:48:27  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+18:48:27  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/config.json "HTTP/1.1 200 OK"
+18:48:27  INFO      New best checkpoint  →  /network/scratch/h/hengh/AGILE-WM/clip_finetune/checkpoint_best
+18:48:27  INFO      Checkpoint saved  →  /network/scratch/h/hengh/AGILE-WM/clip_finetune/lora_epoch_0001
+18:48:35  INFO      Epoch 2  step    0/126  loss=2.9554  lr=1.92e-04  temp=14.522
+18:51:49  INFO      Epoch 2  step   50/126  loss=2.9459  lr=1.85e-04  temp=14.590
+18:55:03  INFO      Epoch 2  step  100/126  loss=2.8435  lr=1.77e-04  temp=14.645
+18:57:30  INFO      Val epoch=2  loss=2.8661  i2t@1=1.8%  i2t@5=5.7%  t2i@1=1.1%  t2i@5=4.4%
+18:57:30  INFO      Epoch 2  train=2.9882  val=2.8661  time=543s
+18:57:30  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+18:57:30  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/config.json "HTTP/1.1 200 OK"
+18:57:30  INFO      New best checkpoint  →  /network/scratch/h/hengh/AGILE-WM/clip_finetune/checkpoint_best
+18:57:30  INFO      Checkpoint saved  →  /network/scratch/h/hengh/AGILE-WM/clip_finetune/lora_epoch_0002
+18:57:38  INFO      Epoch 3  step    0/126  loss=3.0085  lr=1.73e-04  temp=14.657
+19:00:50  INFO      Epoch 3  step   50/126  loss=2.9644  lr=1.63e-04  temp=14.715
+19:03:57  INFO      Epoch 3  step  100/126  loss=3.0035  lr=1.52e-04  temp=14.752
+19:06:29  INFO      Val epoch=3  loss=2.8312  i2t@1=1.3%  i2t@5=6.1%  t2i@1=1.2%  t2i@5=5.0%
+19:06:29  INFO      Epoch 3  train=2.9288  val=2.8312  time=539s
+19:06:29  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+19:06:29  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/config.json "HTTP/1.1 200 OK"
+19:06:29  INFO      New best checkpoint  →  /network/scratch/h/hengh/AGILE-WM/clip_finetune/checkpoint_best
+19:06:29  INFO      Checkpoint saved  →  /network/scratch/h/hengh/AGILE-WM/clip_finetune/lora_epoch_0003
+19:06:37  INFO      Epoch 4  step    0/126  loss=2.7542  lr=1.46e-04  temp=14.773
+19:09:47  INFO      Epoch 4  step   50/126  loss=2.7142  lr=1.33e-04  temp=14.826
+19:12:57  INFO      Epoch 4  step  100/126  loss=3.2289  lr=1.20e-04  temp=14.858
+19:15:29  INFO      Val epoch=4  loss=2.8573  i2t@1=1.2%  i2t@5=5.4%  t2i@1=1.6%  t2i@5=5.7%
+19:15:29  INFO      Epoch 4  train=2.8743  val=2.8573  time=540s
+19:15:29  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+19:15:29  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/config.json "HTTP/1.1 200 OK"
+19:15:29  INFO      Checkpoint saved  →  /network/scratch/h/hengh/AGILE-WM/clip_finetune/lora_epoch_0004
+19:15:38  INFO      Epoch 5  step    0/126  loss=2.9438  lr=1.13e-04  temp=14.871
+19:18:48  INFO      Epoch 5  step   50/126  loss=2.7520  lr=9.97e-05  temp=14.913
+19:21:59  INFO      Epoch 5  step  100/126  loss=2.9853  lr=8.62e-05  temp=14.952
+19:24:26  INFO      Val epoch=5  loss=2.8117  i2t@1=1.6%  i2t@5=5.8%  t2i@1=1.6%  t2i@5=6.0%
+19:24:26  INFO      Epoch 5  train=2.8234  val=2.8117  time=537s
+19:24:27  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+19:24:27  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/config.json "HTTP/1.1 200 OK"
+19:24:27  INFO      New best checkpoint  →  /network/scratch/h/hengh/AGILE-WM/clip_finetune/checkpoint_best
+19:24:27  INFO      Checkpoint saved  →  /network/scratch/h/hengh/AGILE-WM/clip_finetune/lora_epoch_0005
+19:24:35  INFO      Epoch 6  step    0/126  loss=2.6263  lr=7.93e-05  temp=14.968
+19:27:43  INFO      Epoch 6  step   50/126  loss=2.7025  lr=6.63e-05  temp=15.000
+19:30:55  INFO      Epoch 6  step  100/126  loss=3.0783  lr=5.39e-05  temp=15.028
+19:33:29  INFO      Val epoch=6  loss=2.8195  i2t@1=1.4%  i2t@5=6.3%  t2i@1=1.8%  t2i@5=6.0%
+19:33:29  INFO      Epoch 6  train=2.7805  val=2.8195  time=542s
+19:33:29  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+19:33:29  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/config.json "HTTP/1.1 200 OK"
+19:33:29  INFO      Checkpoint saved  →  /network/scratch/h/hengh/AGILE-WM/clip_finetune/lora_epoch_0006
+19:33:37  INFO      Epoch 7  step    0/126  loss=2.7165  lr=4.78e-05  temp=15.040
+19:36:46  INFO      Epoch 7  step   50/126  loss=2.6840  lr=3.67e-05  temp=15.063
+19:39:56  INFO      Epoch 7  step  100/126  loss=2.9113  lr=2.68e-05  temp=15.078
+19:42:28  INFO      Val epoch=7  loss=2.8049  i2t@1=1.3%  i2t@5=6.2%  t2i@1=1.7%  t2i@5=6.3%
+19:42:28  INFO      Epoch 7  train=2.7553  val=2.8049  time=539s
+19:42:28  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+19:42:28  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/config.json "HTTP/1.1 200 OK"
+19:42:28  INFO      New best checkpoint  →  /network/scratch/h/hengh/AGILE-WM/clip_finetune/checkpoint_best
+19:42:28  INFO      Checkpoint saved  →  /network/scratch/h/hengh/AGILE-WM/clip_finetune/lora_epoch_0007
+19:42:36  INFO      Epoch 8  step    0/126  loss=2.3930  lr=2.22e-05  temp=15.082
+19:45:46  INFO      Epoch 8  step   50/126  loss=2.6414  lr=1.45e-05  temp=15.094
+19:48:56  INFO      Epoch 8  step  100/126  loss=2.6372  lr=8.25e-06  temp=15.100
+19:51:28  INFO      Val epoch=8  loss=2.8087  i2t@1=1.6%  i2t@5=6.6%  t2i@1=1.7%  t2i@5=6.3%
+19:51:28  INFO      Epoch 8  train=2.7253  val=2.8087  time=541s
+19:51:28  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+19:51:29  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/config.json "HTTP/1.1 200 OK"
+19:51:29  INFO      Checkpoint saved  →  /network/scratch/h/hengh/AGILE-WM/clip_finetune/lora_epoch_0008
+19:51:37  INFO      Epoch 9  step    0/126  loss=2.7906  lr=5.68e-06  temp=15.102
+19:54:47  INFO      Epoch 9  step   50/126  loss=2.9944  lr=2.06e-06  temp=15.104
+19:57:59  INFO      Epoch 9  step  100/126  loss=2.6752  lr=2.29e-07  temp=15.104
+20:00:27  INFO      Val epoch=9  loss=2.8107  i2t@1=1.6%  i2t@5=6.7%  t2i@1=1.7%  t2i@5=6.3%
+20:00:27  INFO      Epoch 9  train=2.7129  val=2.8107  time=539s
+20:00:28  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+20:00:28  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/config.json "HTTP/1.1 200 OK"
+20:00:28  INFO      Checkpoint saved  →  /network/scratch/h/hengh/AGILE-WM/clip_finetune/lora_epoch_0009
+20:00:28  INFO      Training complete. Best val loss: 2.8049
+20:00:28  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+20:00:28  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/config.json "HTTP/1.1 200 OK"
+20:00:28  INFO      LoRA adapters saved  →  /network/scratch/h/hengh/AGILE-WM/clip_finetune/lora_final
+Writing model shards:   0%|          | 0/1 [00:00<?, ?it/s]Writing model shards: 100%|██████████| 1/1 [00:01<00:00,  1.20s/it]Writing model shards: 100%|██████████| 1/1 [00:01<00:00,  1.20s/it]
+20:00:29  INFO      Merged model saved  →  /network/scratch/h/hengh/AGILE-WM/clip_finetune/merged_final  (use this for inference, peft not required)
