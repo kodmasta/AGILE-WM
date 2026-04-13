@@ -4,6 +4,7 @@ import json
 import tarfile
 import time
 from pathlib import Path
+from typing import Union
 
 from PIL import Image
 import torch
@@ -78,15 +79,48 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def ensure_supported_cuda_device() -> None:
+    if not torch.cuda.is_available():
+        return
+
+    device = torch.device("cuda")
+    device_cc = torch.cuda.get_device_capability(device)
+    device_arch = f"sm_{device_cc[0]}{device_cc[1]}"
+    supported_arches = set(torch.cuda.get_arch_list())
+
+    if supported_arches and device_arch not in supported_arches:
+        supported = ", ".join(sorted(supported_arches))
+        raise RuntimeError(
+            "Installed PyTorch build is not compatible with the active GPU. "
+            f"Found {torch.cuda.get_device_name(device)} ({device_arch}), but this build only supports: {supported}. "
+            "Use Python 3.10 with torch==2.6.0, torchvision==0.21.0, and torchaudio==2.6.0 from the PyTorch CUDA 12.4 index."
+        )
+
+
+def choose_model_dtype() -> Union[str, torch.dtype]:
+    if not torch.cuda.is_available():
+        return "auto"
+
+    if torch.cuda.is_bf16_supported():
+        log("Using bfloat16 model weights on CUDA")
+        return torch.bfloat16
+
+    log("Using float16 model weights on CUDA")
+    return torch.float16
+
+
 def load_model_and_processor(model_dir: Path):
     log(f"Loading model from {model_dir}")
     if not model_dir.exists():
         raise FileNotFoundError(f"Local model directory does not exist: {model_dir}")
 
+    ensure_supported_cuda_device()
+    model_dtype = choose_model_dtype()
+
     t0 = time.time()
     model = Qwen3VLForConditionalGeneration.from_pretrained(
         model_dir,
-        torch_dtype="auto",
+        torch_dtype=model_dtype,
         device_map="auto",
         local_files_only=True,
     )
@@ -278,6 +312,10 @@ def main() -> None:
     log("Script started")
     log(f"torch version: {torch.__version__}")
     log(f"CUDA available: {torch.cuda.is_available()}")
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+        capability = torch.cuda.get_device_capability(device)
+        log(f"CUDA device: {torch.cuda.get_device_name(device)} (sm_{capability[0]}{capability[1]})")
     process_shard(
         shard_path=args.shard_path,
         output_dir=args.output_dir,
