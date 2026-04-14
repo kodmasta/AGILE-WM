@@ -81,6 +81,20 @@ uv run --python 3.10 python CLIP_finetune.py \
   --data_root outputs
 ```
 
+### 5. Test fused latent reconstruction
+
+This experiment is separate from rollout collection. It loads a frozen VAE and a fine-tuned CLIP checkpoint, fuses the VAE latent and CLIP image embedding with compact bilinear pooling, then trains only a linear projection back into the VAE decoder latent space.
+
+```bash
+uv run --python 3.10 python fusion_reconstruction_experiment.py \
+  --config_path configs/carracing.config \
+  --data_root outputs \
+  --clip_checkpoint path/to/merged_final \
+  --output_dir fusion_reconstruction_runs/carracing_cbp
+```
+
+The script writes training curves, saved projection weights, and preview grids that compare the original frame, the frozen VAE reconstruction baseline, and the reconstruction produced from the fused latent.
+
 ## Cluster Usage
 
 The repository includes Slurm scripts for large-scale runs on Mila-style cluster setups:
