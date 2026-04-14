@@ -17,6 +17,7 @@ export HF_HOME="${HF_HOME:-$SCRATCH/hf_home}"
 export TRANSFORMERS_CACHE="${TRANSFORMERS_CACHE:-$SCRATCH/hf_cache}"
 export UV_PROJECT_ENVIRONMENT="${UV_PROJECT_ENVIRONMENT:-$SCRATCH/AGILE-WM/.venvs/clip-ft-py310}"
 export UV_TORCH_BACKEND="${UV_TORCH_BACKEND:-cu124}"
+export UV_LINK_MODE="${UV_LINK_MODE:-copy}"
 
 TORCH_VERSION="${TORCH_VERSION:-2.6.0}"
 TORCHVISION_VERSION="${TORCHVISION_VERSION:-0.21.0}"
@@ -71,12 +72,35 @@ echo "PyTorch versions: torch==$TORCH_VERSION torchvision==$TORCHVISION_VERSION 
 extra_args=("$@")
 
 uv venv --python 3.10 "$UV_PROJECT_ENVIRONMENT"
+
 uv sync \
   --python "$UV_PROJECT_ENVIRONMENT/bin/python" \
   --frozen \
   --no-install-package torch \
   --no-install-package torchvision \
   --no-install-package torchaudio
+
+# Remove the CUDA 13 / NCCL packages that conflict with PyTorch cu124 wheels.
+uv pip uninstall \
+  --python "$UV_PROJECT_ENVIRONMENT/bin/python" \
+  cuda-toolkit \
+  cuda-bindings \
+  cuda-pathfinder \
+  nvidia-cublas \
+  nvidia-cuda-cupti \
+  nvidia-cuda-nvrtc \
+  nvidia-cuda-runtime \
+  nvidia-cudnn-cu13 \
+  nvidia-cufft \
+  nvidia-cufile \
+  nvidia-curand \
+  nvidia-cusolver \
+  nvidia-cusparse \
+  nvidia-cusparselt-cu13 \
+  nvidia-nccl-cu13 \
+  nvidia-nvjitlink \
+  nvidia-nvshmem-cu13 \
+  nvidia-nvtx || true
 
 uv pip install \
   --python "$UV_PROJECT_ENVIRONMENT/bin/python" \
@@ -85,7 +109,14 @@ uv pip install \
   "torchvision==$TORCHVISION_VERSION" \
   "torchaudio==$TORCHAUDIO_VERSION"
 
-uv run --python "$UV_PROJECT_ENVIRONMENT/bin/python" python CLIP_finetune.py \
+SITE_PACKAGES="$("$UV_PROJECT_ENVIRONMENT/bin/python" -c 'import site; print(site.getsitepackages()[0])')"
+
+# Force PyTorch to pick its own cu124 shared libraries first.
+export LD_LIBRARY_PATH="$SITE_PACKAGES/nvidia/nccl/lib:$SITE_PACKAGES/nvidia/cublas/lib:$SITE_PACKAGES/nvidia/cudnn/lib:$SITE_PACKAGES/nvidia/cuda_runtime/lib:$SITE_PACKAGES/nvidia/cufft/lib:$SITE_PACKAGES/nvidia/curand/lib:$SITE_PACKAGES/nvidia/cusolver/lib:$SITE_PACKAGES/nvidia/cusparse/lib:$SITE_PACKAGES/nvidia/cusparselt/lib:$SITE_PACKAGES/nvidia/nvjitlink/lib:${LD_LIBRARY_PATH:-}"
+
+"$UV_PROJECT_ENVIRONMENT/bin/python" -c "import torch; print('torch', torch.__version__); print('cuda', torch.version.cuda); print('cuda_available', torch.cuda.is_available())"
+
+"$UV_PROJECT_ENVIRONMENT/bin/python" CLIP_finetune.py \
   --data_root "$DATA_ROOT" \
   --output_dir "$OUTPUT_DIR" \
   --hf_cache_dir "$TRANSFORMERS_CACHE" \
