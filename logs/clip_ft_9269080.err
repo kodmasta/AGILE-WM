@@ -407,3 +407,14 @@ Notes:
 17:59:16  INFO      Epoch 19  step  200/323  loss=2.4665  lr=9.08e-08  temp=17.021
 18:02:04  INFO      Epoch 19  step  250/323  loss=2.8033  lr=3.16e-08  temp=17.021
 18:04:51  INFO      Epoch 19  step  300/323  loss=2.5167  lr=2.95e-09  temp=17.021
+18:08:06  INFO      Val epoch=19  loss=2.9922  i2t@1=0.8%  i2t@5=3.6%  t2i@1=0.6%  t2i@5=3.4%
+18:08:06  INFO      Epoch 19  train=2.5927  val=2.9922  time=1208s
+18:08:06  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+18:08:06  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/config.json "HTTP/1.1 200 OK"
+18:08:06  INFO      Checkpoint saved  →  /network/scratch/h/hengh/AGILE-WM/clip_finetune/lora_epoch_0019
+18:08:06  INFO      Training complete. Best val loss: 2.9092
+18:08:06  INFO      HTTP Request: HEAD https://huggingface.co/openai/clip-vit-base-patch32/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+18:08:06  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai/clip-vit-base-patch32/3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268/config.json "HTTP/1.1 200 OK"
+18:08:06  INFO      LoRA adapters saved  →  /network/scratch/h/hengh/AGILE-WM/clip_finetune/lora_final
+Writing model shards:   0%|          | 0/1 [00:00<?, ?it/s]Writing model shards: 100%|██████████| 1/1 [00:01<00:00,  1.11s/it]Writing model shards: 100%|██████████| 1/1 [00:01<00:00,  1.11s/it]
+18:08:07  INFO      Merged model saved  →  /network/scratch/h/hengh/AGILE-WM/clip_finetune/merged_final  (use this for inference, peft not required)
