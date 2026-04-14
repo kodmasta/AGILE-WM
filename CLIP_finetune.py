@@ -64,7 +64,7 @@ def cluster_scratch_root() -> Path:
 
 def default_data_root() -> Path:
     candidates = [
-        (cluster_scratch_root() / "my_dataset" / "frame-caption-pairs").resolve(),
+        (cluster_scratch_root() / "my_dataset" / "frame-caption-pairs-temp").resolve(),
         (cluster_scratch_root() / "my_dataset" / "outputs").resolve(),
         (cluster_scratch_root() / "my_dataset").resolve(),
         (SCRIPT_DIR / "outputs").resolve(),
@@ -147,7 +147,7 @@ def discover_shard_directories(primary_root: Path, shard_glob: str) -> List[Path
         primary_root / "outputs",
         primary_root.parent if primary_root.parent != primary_root else None,
         SCRIPT_DIR / "outputs",
-        (cluster_scratch_root() / "my_dataset" / "frame-caption-pairs").resolve(),
+        (cluster_scratch_root() / "my_dataset" / "frame-caption-pairs-temp").resolve(),
         (cluster_scratch_root() / "my_dataset" / "outputs").resolve(),
         (cluster_scratch_root() / "my_dataset").resolve(),
     ]
@@ -698,9 +698,9 @@ def parse_args():
                    help="Which encoders to apply LoRA to")
 
     # Training
-    p.add_argument("--epochs",       type=int,   default=10)
+    p.add_argument("--epochs",       type=int,   default=20)
     p.add_argument("--batch_size",   type=int,   default=64)
-    p.add_argument("--lr",           type=float, default=2e-4,
+    p.add_argument("--lr",           type=float, default=1e-4,
                    help="AdamW LR (LoRA can use higher LR than full fine-tune)")
     p.add_argument("--weight_decay", type=float, default=0.01)
     p.add_argument("--warmup_steps", type=int,   default=100)

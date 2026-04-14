@@ -15,12 +15,18 @@ module load python/3.10
 export SCRATCH="${SCRATCH:-/network/scratch/h/hengh}"
 export HF_HOME="${HF_HOME:-$SCRATCH/hf_home}"
 export TRANSFORMERS_CACHE="${TRANSFORMERS_CACHE:-$SCRATCH/hf_cache}"
+export UV_PROJECT_ENVIRONMENT="${UV_PROJECT_ENVIRONMENT:-$SCRATCH/AGILE-WM/.venvs/clip-ft-py310}"
+export UV_TORCH_BACKEND="${UV_TORCH_BACKEND:-cu124}"
+
+TORCH_VERSION="${TORCH_VERSION:-2.6.0}"
+TORCHVISION_VERSION="${TORCHVISION_VERSION:-0.21.0}"
+TORCHAUDIO_VERSION="${TORCHAUDIO_VERSION:-2.6.0}"
 
 SHARD_GLOB="${SHARD_GLOB:-shard-*-caption-*.tar}"
 
 # Point this at the directory that contains caption shards such as
 # shard-00000-caption-00000.tar. Update it if your caption tar files live elsewhere.
-DEFAULT_DATA_ROOT="$SCRATCH/my_dataset/frame-caption-pairs"
+DEFAULT_DATA_ROOT="$SCRATCH/my_dataset/frame-caption-pairs-temp"
 if [[ ! -d "$DEFAULT_DATA_ROOT" ]] || ! compgen -G "$DEFAULT_DATA_ROOT/$SHARD_GLOB" > /dev/null; then
   DEFAULT_DATA_ROOT="$SCRATCH/my_dataset/outputs"
 fi
@@ -35,7 +41,7 @@ OUTPUT_DIR="${OUTPUT_DIR:-$SCRATCH/AGILE-WM/clip_finetune}"
 LOCAL_DATA_DIR="${LOCAL_DATA_DIR:-${SLURM_TMPDIR:-/tmp}/clip_caption_shards}"
 CLIP_MODEL="${CLIP_MODEL:-openai/clip-vit-base-patch32}"
 
-mkdir -p logs "$HF_HOME" "$TRANSFORMERS_CACHE" "$OUTPUT_DIR"
+mkdir -p logs "$HF_HOME" "$TRANSFORMERS_CACHE" "$OUTPUT_DIR" "$(dirname "$UV_PROJECT_ENVIRONMENT")"
 
 if [[ ! -d "$DATA_ROOT" ]]; then
   echo "Configured DATA_ROOT does not exist: $DATA_ROOT" >&2
@@ -58,12 +64,28 @@ echo "Data root: $DATA_ROOT"
 echo "Output dir: $OUTPUT_DIR"
 echo "HF cache: $TRANSFORMERS_CACHE"
 echo "Local shard dir: $LOCAL_DATA_DIR"
+echo "UV env: $UV_PROJECT_ENVIRONMENT"
+echo "PyTorch backend: $UV_TORCH_BACKEND"
+echo "PyTorch versions: torch==$TORCH_VERSION torchvision==$TORCHVISION_VERSION torchaudio==$TORCHAUDIO_VERSION"
 
 extra_args=("$@")
 
-uv sync --python 3.10
+uv venv --python 3.10 "$UV_PROJECT_ENVIRONMENT"
+uv sync \
+  --python "$UV_PROJECT_ENVIRONMENT/bin/python" \
+  --frozen \
+  --no-install-package torch \
+  --no-install-package torchvision \
+  --no-install-package torchaudio
 
-uv run --python 3.10 python CLIP_finetune.py \
+uv pip install \
+  --python "$UV_PROJECT_ENVIRONMENT/bin/python" \
+  --torch-backend "$UV_TORCH_BACKEND" \
+  "torch==$TORCH_VERSION" \
+  "torchvision==$TORCHVISION_VERSION" \
+  "torchaudio==$TORCHAUDIO_VERSION"
+
+uv run --python "$UV_PROJECT_ENVIRONMENT/bin/python" python CLIP_finetune.py \
   --data_root "$DATA_ROOT" \
   --output_dir "$OUTPUT_DIR" \
   --hf_cache_dir "$TRANSFORMERS_CACHE" \
@@ -73,5 +95,4 @@ uv run --python 3.10 python CLIP_finetune.py \
   --local_data_dir "$LOCAL_DATA_DIR" \
   --save_every 1 \
   --num_workers 2 \
-  --resume \
   "${extra_args[@]}"
