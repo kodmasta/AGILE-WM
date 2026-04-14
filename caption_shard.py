@@ -16,26 +16,44 @@ DEFAULT_MODEL_DIR = SCRIPT_DIR / "qwen3-vl-8b-instruct"
 MAX_NEW_TOKENS = 70
 
 PROMPT = """
-Describe this 64x64 top-down racing game frame in one sentence.
+You are labeling a 64x64 top-down racing game frame.
+Choose exactly one value for each field from the allowed options below.
 
-Focus on:
-- the road shape and direction
-- where the car is on the road
-- whether the car looks aligned with the road or turning
-- whether it is on asphalt, grass, or partly offroad
-- any obvious motion cues like drifting, recovering, entering a turn, or skid marks
+road shape:
+straight, slight left, gentle left, medium left, sharp left, hairpin left,
+slight right, gentle right, medium right, sharp right, hairpin right
 
-Requirements:
-- Output only one concise caption
-- Use natural language, not labels
-- Mention the most important driving situation first
-- Prefer concrete visual descriptions over generic ones
-- If uncertain, describe the closest visible situation
+car position:
+far left, left, center-left, center, center-right, right, far right
 
-Example style:
-car near the left edge of a sharp left turn, slightly misaligned, with skid marks as it enters the corner
-car centered on a straight asphalt section, aligned with the road and driving steadily
-car drifting off the right side of a gentle right curve, partly on grass and recovering
+surface under car:
+asphalt, grass, curb, mixed
+
+heading alignment:
+aligned, slightly left, moderately left, strongly left,
+slightly right, moderately right, strongly right, sideways
+
+action steer:
+hard left, left, slight left, neutral, slight right, right, hard right
+
+skid marks visible:
+none, faint, clear
+
+transition:
+stable, entering left turn, entering right turn, mid left turn, mid right turn,
+exiting left turn, exiting right turn, moving left, moving right,
+drifting left, drifting right, recovering, offroad, re-entering road
+
+Output format:
+road shape=<value>, car position=<value>, surface under car=<value>, heading alignment=<value>, action steer=<value>, skid marks visible=<value>, transition=<value>
+
+Rules:
+- Analyze the visible road geometry for road shape.
+- Output exactly one value per field.
+- Use only the allowed labels.
+- Do not explain.
+- Do not add extra words.
+- If uncertain, choose the closest visible label.
 """.strip()
 
 def log(msg: str) -> None:

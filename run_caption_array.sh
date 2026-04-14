@@ -2,11 +2,12 @@
 #SBATCH --job-name=qwen_cap
 #SBATCH --output=logs/qwen_cap_%A_%a.out
 #SBATCH --error=logs/qwen_cap_%A_%a.err
-#SBATCH --array=20
+#SBATCH --array=20-39%4
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=2
-#SBATCH --mem=32G
+#SBATCH --mem=24G
 #SBATCH --time=04:00:00
+#SBATCH --partition=main
 
 set -euo pipefail
 
@@ -19,12 +20,23 @@ export SCRATCH="${SCRATCH:-/network/scratch/h/hengh}"
 export HF_HOME="${HF_HOME:-$SCRATCH/hf_home}"
 export TRANSFORMERS_CACHE="${TRANSFORMERS_CACHE:-$SCRATCH/hf_cache}"
 export UV_PYTHON="${UV_PYTHON:-3.10}"
+OUTPUT_DIR="${OUTPUT_DIR:-$HOME/scratch/my_dataset/frame-caption-pairs}"
+JOB_VENV_DIR="${SLURM_TMPDIR:-/tmp}/agile-wm-caption-${SLURM_JOB_ID:-manual}-${SLURM_ARRAY_TASK_ID:-0}"
+JOB_PYTHON="$JOB_VENV_DIR/bin/python"
 
-mkdir -p logs "$HF_HOME" "$TRANSFORMERS_CACHE"
+mkdir -p logs "$HF_HOME" "$TRANSFORMERS_CACHE" "$OUTPUT_DIR"
 
 LEGACY_TORCH_INDEX="https://download.pytorch.org/whl/cu124"
 LEGACY_TORCH_PACKAGES=(torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0)
 MODERN_TORCH_PACKAGES=(torch==2.11.0 torchvision==0.26.0 torchaudio==2.11.0)
+CAPTION_RUNTIME_PACKAGES=(accelerate numpy pillow transformers)
+
+prepare_caption_env() {
+  echo "Preparing job-local caption environment at $JOB_VENV_DIR"
+  rm -rf "$JOB_VENV_DIR"
+  uv venv --python "$UV_PYTHON" "$JOB_VENV_DIR"
+  uv pip install --python "$JOB_PYTHON" "${CAPTION_RUNTIME_PACKAGES[@]}"
+}
 
 detect_gpu_compute_capability() {
   nvidia-smi --query-gpu=compute_cap --format=csv,noheader 2>/dev/null | head -n 1 | tr -d '[:space:]'
@@ -52,13 +64,13 @@ install_torch_stack() {
   case "$stack_name" in
     legacy-cu124)
       echo "Installing legacy CUDA 12.4 torch stack: ${LEGACY_TORCH_PACKAGES[*]}"
-      uv pip install --python .venv/bin/python \
+      uv pip install --python "$JOB_PYTHON" \
         --index-url "$LEGACY_TORCH_INDEX" \
         "${LEGACY_TORCH_PACKAGES[@]}"
       ;;
     modern-default)
       echo "Installing modern torch stack: ${MODERN_TORCH_PACKAGES[*]}"
-      uv pip install --python .venv/bin/python \
+      uv pip install --python "$JOB_PYTHON" \
         "${MODERN_TORCH_PACKAGES[@]}"
       ;;
     *)
@@ -69,10 +81,14 @@ install_torch_stack() {
 }
 
 torch_supports_active_gpu() {
-  uv run --python "$UV_PYTHON" python -W ignore - <<'PY'
+  "$JOB_PYTHON" -W ignore - <<'PY'
 import sys
 
-import torch
+try:
+  import torch
+except Exception as exc:
+  print(f"Failed to import torch after installing the selected stack: {exc}", file=sys.stderr)
+  raise SystemExit(2)
 
 if not torch.cuda.is_available():
     raise SystemExit(0)
@@ -98,11 +114,13 @@ if supported:
   if any(major == cc[0] and minor <= cc[1] for major, minor in supported_ccs):
     raise SystemExit(0)
 
-    print(
-        f"Resolved torch build does not support {arch}; available arches: {', '.join(sorted(supported))}",
-        file=sys.stderr,
-    )
-    raise SystemExit(1)
+  print(
+      f"Resolved torch build does not support {arch}; available arches: {', '.join(sorted(supported))}",
+      file=sys.stderr,
+  )
+  raise SystemExit(1)
+
+raise SystemExit(0)
 PY
 }
 
@@ -117,7 +135,9 @@ echo "Copying shard to local disk..."
 cp "$SHARD_PATH" "$SHARD_DST"
 
 echo "Running captioning..."
-uv sync --python "$UV_PYTHON"
+echo "Caption outputs will be written to: $OUTPUT_DIR"
+prepare_caption_env
+echo "Using job-local python: $JOB_PYTHON"
 
 GPU_CC="$(detect_gpu_compute_capability || true)"
 if [[ -n "$GPU_CC" ]]; then
@@ -135,17 +155,21 @@ fi
 echo "Selected torch stack: $TORCH_STACK"
 install_torch_stack "$TORCH_STACK"
 
+torch_probe_status=0
 if torch_supports_active_gpu; then
   echo "Installed torch build is compatible with the active GPU."
 else
-  echo "Installed torch build is incompatible with compute capability $GPU_CC after selecting stack $TORCH_STACK." >&2
+  torch_probe_status=$?
+  if [[ "$torch_probe_status" -eq 2 ]]; then
+    echo "Installed torch stack failed to import after selecting $TORCH_STACK. Check the preceding CUDA/NCCL loader error." >&2
+  else
+    echo "Installed torch build is incompatible with compute capability $GPU_CC after selecting stack $TORCH_STACK." >&2
+  fi
   exit 1
 fi
 
-uv run --python "$UV_PYTHON" python caption_shard.py \
+"$JOB_PYTHON" caption_shard.py \
   --shard_path "$SHARD_DST" \
-  --output_dir "outputs" \
+  --output_dir "$OUTPUT_DIR" \
   --model_dir "$MODEL_SRC" \
   --shard_size 1000
-
-  

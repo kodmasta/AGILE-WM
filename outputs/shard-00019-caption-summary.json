@@ -1,0 +1,10 @@
+{
+  "source_shard": "/tmp/shard-00019.tar",
+  "output_dir": "/home/mila/h/hengh/scratch/my_dataset/frame-caption-pairs",
+  "output_shards": [
+    "/home/mila/h/hengh/scratch/my_dataset/frame-caption-pairs/shard-00019-caption-00000.tar"
+  ],
+  "samples_written": 1000,
+  "shard_size": 1000,
+  "max_new_tokens": 70
+}

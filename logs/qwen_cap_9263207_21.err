@@ -1,0 +1,77 @@
+[=== Module python/3.10 loaded ===]
+Using CPython 3.10.11 interpreter at: /cvmfs/ai.mila.quebec/apps/arch/distro/python/3.10/bin/python3.10
+Creating virtual environment at: /tmp/agile-wm-caption-9263210-21
+Activate with: source /tmp/agile-wm-caption-9263210-21/bin/activate
+Using Python 3.10.11 environment at: /tmp/agile-wm-caption-9263210-21
+Resolved 57 packages in 204ms
+warning: Failed to hardlink files; falling back to full copy. This may lead to degraded performance.
+         If the cache and target directories are on different filesystems, hardlinking may not be supported.
+         If this is intentional, set `export UV_LINK_MODE=copy` or use `--link-mode=copy` to suppress this warning.
+Installed 57 packages in 21.99s
+ + accelerate==1.13.0
+ + annotated-doc==0.0.4
+ + anyio==4.13.0
+ + certifi==2026.2.25
+ + click==8.3.2
+ + cuda-bindings==13.2.0
+ + cuda-pathfinder==1.5.2
+ + cuda-toolkit==13.0.2
+ + exceptiongroup==1.3.1
+ + filelock==3.25.2
+ + fsspec==2026.3.0
+ + h11==0.16.0
+ + hf-xet==1.4.3
+ + httpcore==1.0.9
+ + httpx==0.28.1
+ + huggingface-hub==1.10.1
+ + idna==3.11
+ + jinja2==3.1.6
+ + markdown-it-py==4.0.0
+ + markupsafe==3.0.3
+ + mdurl==0.1.2
+ + mpmath==1.3.0
+ + networkx==3.4.2
+ + numpy==2.2.6
+ + nvidia-cublas==13.1.0.3
+ + nvidia-cuda-cupti==13.0.85
+ + nvidia-cuda-nvrtc==13.0.88
+ + nvidia-cuda-runtime==13.0.96
+ + nvidia-cudnn-cu13==9.19.0.56
+ + nvidia-cufft==12.0.0.61
+ + nvidia-cufile==1.15.1.6
+ + nvidia-curand==10.4.0.35
+ + nvidia-cusolver==12.0.4.66
+ + nvidia-cusparse==12.6.3.3
+ + nvidia-cusparselt-cu13==0.8.0
+ + nvidia-nccl-cu13==2.28.9
+ + nvidia-nvjitlink==13.0.88
+ + nvidia-nvshmem-cu13==3.4.5
+ + nvidia-nvtx==13.0.85
+ + packaging==26.0
+ + pillow==12.2.0
+ + psutil==7.2.2
+ + pygments==2.20.0
+ + pyyaml==6.0.3
+ + regex==2026.4.4
+ + rich==15.0.0
+ + safetensors==0.7.0
+ + setuptools==81.0.0
+ + shellingham==1.5.4
+ + sympy==1.14.0
+ + tokenizers==0.22.2
+ + torch==2.11.0
+ + tqdm==4.67.3
+ + transformers==5.5.4
+ + triton==3.6.0
+ + typer==0.24.1
+ + typing-extensions==4.15.0
+Using Python 3.10.11 environment at: /tmp/agile-wm-caption-9263210-21
+Resolved 33 packages in 98ms
+warning: Failed to hardlink files; falling back to full copy. This may lead to degraded performance.
+         If the cache and target directories are on different filesystems, hardlinking may not be supported.
+         If this is intentional, set `export UV_LINK_MODE=copy` or use `--link-mode=copy` to suppress this warning.
+Installed 2 packages in 327ms
+ + torchaudio==2.11.0
+ + torchvision==0.26.0
+Loading weights:   0%|          | 0/750 [00:00<?, ?it/s]Loading weights:   0%|          | 1/750 [00:01<15:08,  1.21s/it]Loading weights:   0%|          | 2/750 [00:02<17:09,  1.38s/it]Loading weights:   1%|          | 4/750 [00:02<06:49,  1.82it/s]Loading weights:   1%|          | 5/750 [00:02<05:10,  2.40it/s]Loading weights:   1%|          | 6/750 [00:03<04:03,  3.05it/s]Loading weights:   2%|▏         | 15/750 [00:03<01:01, 11.90it/s]Loading weights:   2%|▏         | 18/750 [00:03<01:00, 12.16it/s]Loading weights:   3%|▎         | 24/750 [00:03<00:39, 18.45it/s]Loading weights:   4%|▎         | 27/750 [00:03<00:46, 15.71it/s]Loading weights:   4%|▍         | 30/750 [00:04<00:43, 16.74it/s]Loading weights:   5%|▍         | 34/750 [00:04<00:35, 20.41it/s]Loading weights:   5%|▍         | 37/750 [00:04<00:34, 20.49it/s]Loading weights:   5%|▌         | 40/750 [00:04<00:42, 16.68it/s]Loading weights:   6%|▌         | 45/750 [00:04<00:31, 22.39it/s]Loading weights:   6%|▋         | 48/750 [00:04<00:32, 21.69it/s]Loading weights:   7%|▋         | 51/750 [00:05<00:40, 17.05it/s]Loading weights:   7%|▋         | 56/750 [00:05<00:31, 22.29it/s]Loading weights:   8%|▊         | 59/750 [00:05<00:31, 22.19it/s]Loading weights:   8%|▊         | 62/750 [00:05<00:38, 17.70it/s]Loading weights:   9%|▉         | 67/750 [00:05<00:29, 23.54it/s]Loading weights:   9%|▉         | 71/750 [00:05<00:34, 19.81it/s]Loading weights:  10%|▉         | 74/750 [00:06<00:32, 20.50it/s]Loading weights:  10%|█         | 78/750 [00:06<00:27, 24.14it/s]Loading weights:  11%|█         | 81/750 [00:06<00:28, 23.23it/s]Loading weights:  11%|█         | 84/750 [00:06<00:37, 17.68it/s]Loading weights:  12%|█▏        | 89/750 [00:06<00:28, 23.60it/s]Loading weights:  12%|█▏        | 93/750 [00:07<00:33, 19.85it/s]Loading weights:  13%|█▎        | 96/750 [00:07<00:31, 20.65it/s]Loading weights:  13%|█▎        | 101/750 [00:07<00:25, 25.94it/s]Loading weights:  14%|█▍        | 105/750 [00:07<00:39, 16.52it/s]Loading weights:  15%|█▍        | 110/750 [00:07<00:29, 21.42it/s]Loading weights:  15%|█▌        | 114/750 [00:07<00:27, 23.03it/s]Loading weights:  16%|█▌        | 118/750 [00:08<00:31, 19.83it/s]Loading weights:  16%|█▋        | 122/750 [00:08<00:27, 23.20it/s]Loading weights:  17%|█▋        | 125/750 [00:08<00:27, 22.99it/s]Loading weights:  17%|█▋        | 128/750 [00:08<00:34, 18.29it/s]Loading weights:  18%|█▊        | 134/750 [00:08<00:23, 25.68it/s]Loading weights:  18%|█▊        | 138/750 [00:09<00:36, 16.99it/s]Loading weights:  19%|█▉        | 144/750 [00:09<00:27, 22.33it/s]Loading weights:  20%|█▉        | 148/750 [00:09<00:39, 15.11it/s]Loading weights:  21%|██        | 155/750 [00:10<00:28, 21.20it/s]Loading weights:  21%|██        | 159/750 [00:10<00:31, 18.68it/s]Loading weights:  22%|██▏       | 162/750 [00:10<00:30, 19.22it/s]Loading weights:  22%|██▏       | 166/750 [00:10<00:26, 22.30it/s]Loading weights:  23%|██▎       | 169/750 [00:10<00:27, 21.14it/s]Loading weights:  23%|██▎       | 172/750 [00:10<00:32, 17.64it/s]Loading weights:  24%|██▎       | 178/750 [00:11<00:23, 24.84it/s]Loading weights:  24%|██▍       | 182/750 [00:11<00:32, 17.69it/s]Loading weights:  25%|██▌       | 189/750 [00:11<00:22, 25.18it/s]Loading weights:  26%|██▌       | 193/750 [00:11<00:30, 18.48it/s]Loading weights:  27%|██▋       | 200/750 [00:12<00:21, 25.57it/s]Loading weights:  27%|██▋       | 204/750 [00:12<00:27, 19.63it/s]Loading weights:  28%|██▊       | 211/750 [00:12<00:20, 26.71it/s]Loading weights:  29%|██▉       | 216/750 [00:12<00:25, 21.17it/s]Loading weights:  30%|██▉       | 222/750 [00:12<00:19, 26.64it/s]Loading weights:  30%|███       | 227/750 [00:13<00:25, 20.42it/s]Loading weights:  31%|███       | 232/750 [00:13<00:21, 24.31it/s]Loading weights:  31%|███▏      | 236/750 [00:13<00:24, 20.60it/s]Loading weights:  32%|███▏      | 239/750 [00:13<00:24, 20.76it/s]Loading weights:  32%|███▏      | 242/750 [00:14<00:22, 22.28it/s]Loading weights:  33%|███▎      | 246/750 [00:14<00:21, 23.83it/s]Loading weights:  33%|███▎      | 249/750 [00:14<00:26, 18.56it/s]Loading weights:  34%|███▍      | 255/750 [00:14<00:19, 25.50it/s]Loading weights:  35%|███▍      | 259/750 [00:14<00:28, 17.25it/s]Loading weights:  35%|███▌      | 263/750 [00:15<00:23, 20.47it/s]Loading weights:  36%|███▌      | 268/750 [00:15<00:20, 23.76it/s]Loading weights:  36%|███▋      | 272/750 [00:15<00:24, 19.82it/s]Loading weights:  37%|███▋      | 276/750 [00:15<00:20, 22.67it/s]Loading weights:  37%|███▋      | 279/750 [00:15<00:22, 21.40it/s]Loading weights:  38%|███▊      | 282/750 [00:16<00:28, 16.37it/s]Loading weights:  38%|███▊      | 285/750 [00:16<00:25, 18.23it/s]Loading weights:  39%|███▊      | 290/750 [00:16<00:21, 21.29it/s]Loading weights:  39%|███▉      | 293/750 [00:16<00:26, 17.06it/s]Loading weights:  40%|███▉      | 297/750 [00:16<00:21, 20.64it/s]Loading weights:  40%|████      | 301/750 [00:16<00:20, 22.06it/s]Loading weights:  41%|████      | 304/750 [00:17<00:25, 17.27it/s]Loading weights:  41%|████▏     | 310/750 [00:17<00:18, 24.24it/s]Loading weights:  42%|████▏     | 314/750 [00:17<00:25, 17.23it/s]Loading weights:  43%|████▎     | 321/750 [00:17<00:17, 24.69it/s]Loading weights:  43%|████▎     | 325/750 [00:18<00:23, 17.79it/s]Loading weights:  44%|████▍     | 332/750 [00:18<00:16, 24.84it/s]Loading weights:  45%|████▍     | 336/750 [00:18<00:22, 18.73it/s]Loading weights:  46%|████▌     | 345/750 [00:18<00:16, 24.27it/s]Loading weights:  47%|████▋     | 349/750 [00:19<00:19, 20.76it/s]Loading weights:  47%|████▋     | 352/750 [00:19<00:18, 21.23it/s]Loading weights:  47%|████▋     | 356/750 [00:19<00:17, 22.12it/s]Loading weights:  48%|████▊     | 359/750 [00:19<00:21, 17.96it/s]Loading weights:  48%|████▊     | 362/750 [00:19<00:19, 19.71it/s]Loading weights:  49%|████▉     | 367/750 [00:20<00:16, 23.40it/s]Loading weights:  49%|████▉     | 370/750 [00:20<00:21, 17.86it/s]Loading weights:  50%|█████     | 375/750 [00:20<00:16, 22.87it/s]Loading weights:  50%|█████     | 378/750 [00:20<00:16, 21.90it/s]Loading weights:  51%|█████     | 381/750 [00:20<00:23, 16.04it/s]Loading weights:  51%|█████▏    | 386/750 [00:21<00:18, 20.21it/s]Loading weights:  52%|█████▏    | 389/750 [00:21<00:18, 19.49it/s]Loading weights:  52%|█████▏    | 392/750 [00:21<00:23, 15.08it/s]Loading weights:  53%|█████▎    | 397/750 [00:21<00:17, 19.76it/s]Loading weights:  56%|█████▌    | 419/750 [00:21<00:06, 53.66it/s]Loading weights:  59%|█████▉    | 443/750 [00:21<00:03, 87.93it/s]Loading weights:  62%|██████▏   | 467/750 [00:22<00:02, 119.61it/s]Loading weights:  66%|██████▌   | 493/750 [00:22<00:01, 152.36it/s]Loading weights:  69%|██████▊   | 514/750 [00:22<00:01, 164.21it/s]Loading weights:  71%|███████▏  | 535/750 [00:22<00:01, 174.95it/s]Loading weights:  75%|███████▌  | 563/750 [00:22<00:00, 199.17it/s]Loading weights:  78%|███████▊  | 587/750 [00:22<00:00, 207.38it/s]Loading weights:  81%|████████▏ | 611/750 [00:22<00:00, 210.12it/s]Loading weights:  85%|████████▍ | 635/750 [00:22<00:00, 214.16it/s]Loading weights:  88%|████████▊ | 659/750 [00:22<00:00, 215.76it/s]Loading weights:  91%|█████████ | 683/750 [00:23<00:00, 216.83it/s]Loading weights:  95%|█████████▍| 709/750 [00:23<00:00, 227.05it/s]Loading weights:  98%|█████████▊| 732/750 [00:23<00:00, 155.14it/s]Loading weights: 100%|██████████| 750/750 [00:23<00:00, 31.56it/s] 
+The following generation flags are not valid and may be ignored: ['temperature', 'top_p', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.

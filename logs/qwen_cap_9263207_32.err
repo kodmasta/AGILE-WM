@@ -1,0 +1,97 @@
+[=== Module python/3.10 loaded ===]
+Using CPython 3.10.11 interpreter at: /cvmfs/ai.mila.quebec/apps/arch/distro/python/3.10/bin/python3.10
+Creating virtual environment at: /tmp/agile-wm-caption-9266085-32
+Activate with: source /tmp/agile-wm-caption-9266085-32/bin/activate
+Using Python 3.10.11 environment at: /tmp/agile-wm-caption-9266085-32
+Resolved 57 packages in 227ms
+warning: Failed to hardlink files; falling back to full copy. This may lead to degraded performance.
+         If the cache and target directories are on different filesystems, hardlinking may not be supported.
+         If this is intentional, set `export UV_LINK_MODE=copy` or use `--link-mode=copy` to suppress this warning.
+Installed 57 packages in 19.53s
+ + accelerate==1.13.0
+ + annotated-doc==0.0.4
+ + anyio==4.13.0
+ + certifi==2026.2.25
+ + click==8.3.2
+ + cuda-bindings==13.2.0
+ + cuda-pathfinder==1.5.2
+ + cuda-toolkit==13.0.2
+ + exceptiongroup==1.3.1
+ + filelock==3.25.2
+ + fsspec==2026.3.0
+ + h11==0.16.0
+ + hf-xet==1.4.3
+ + httpcore==1.0.9
+ + httpx==0.28.1
+ + huggingface-hub==1.10.1
+ + idna==3.11
+ + jinja2==3.1.6
+ + markdown-it-py==4.0.0
+ + markupsafe==3.0.3
+ + mdurl==0.1.2
+ + mpmath==1.3.0
+ + networkx==3.4.2
+ + numpy==2.2.6
+ + nvidia-cublas==13.1.0.3
+ + nvidia-cuda-cupti==13.0.85
+ + nvidia-cuda-nvrtc==13.0.88
+ + nvidia-cuda-runtime==13.0.96
+ + nvidia-cudnn-cu13==9.19.0.56
+ + nvidia-cufft==12.0.0.61
+ + nvidia-cufile==1.15.1.6
+ + nvidia-curand==10.4.0.35
+ + nvidia-cusolver==12.0.4.66
+ + nvidia-cusparse==12.6.3.3
+ + nvidia-cusparselt-cu13==0.8.0
+ + nvidia-nccl-cu13==2.28.9
+ + nvidia-nvjitlink==13.0.88
+ + nvidia-nvshmem-cu13==3.4.5
+ + nvidia-nvtx==13.0.85
+ + packaging==26.0
+ + pillow==12.2.0
+ + psutil==7.2.2
+ + pygments==2.20.0
+ + pyyaml==6.0.3
+ + regex==2026.4.4
+ + rich==15.0.0
+ + safetensors==0.7.0
+ + setuptools==81.0.0
+ + shellingham==1.5.4
+ + sympy==1.14.0
+ + tokenizers==0.22.2
+ + torch==2.11.0
+ + tqdm==4.67.3
+ + transformers==5.5.4
+ + triton==3.6.0
+ + typer==0.24.1
+ + typing-extensions==4.15.0
+Using Python 3.10.11 environment at: /tmp/agile-wm-caption-9266085-32
+Resolved 27 packages in 658ms
+Uninstalled 3 packages in 518ms
+warning: Failed to hardlink files; falling back to full copy. This may lead to degraded performance.
+         If the cache and target directories are on different filesystems, hardlinking may not be supported.
+         If this is intentional, set `export UV_LINK_MODE=copy` or use `--link-mode=copy` to suppress this warning.
+Installed 18 packages in 22.81s
+ + nvidia-cublas-cu12==12.4.5.8
+ + nvidia-cuda-cupti-cu12==12.4.127
+ + nvidia-cuda-nvrtc-cu12==12.4.127
+ + nvidia-cuda-runtime-cu12==12.4.127
+ + nvidia-cudnn-cu12==9.1.0.70
+ + nvidia-cufft-cu12==11.2.1.3
+ + nvidia-curand-cu12==10.3.5.147
+ + nvidia-cusolver-cu12==11.6.1.9
+ + nvidia-cusparse-cu12==12.3.1.170
+ + nvidia-cusparselt-cu12==0.6.2
+ + nvidia-nccl-cu12==2.21.5
+ + nvidia-nvjitlink-cu12==12.4.127
+ + nvidia-nvtx-cu12==12.4.127
+ - sympy==1.14.0
+ + sympy==1.13.1
+ - torch==2.11.0
+ + torch==2.6.0+cu124
+ + torchaudio==2.6.0+cu124
+ + torchvision==0.21.0+cu124
+ - triton==3.6.0
+ + triton==3.2.0
+Loading weights:   0%|          | 0/750 [00:00<?, ?it/s]Loading weights:   0%|          | 1/750 [00:00<02:11,  5.69it/s]Loading weights:   0%|          | 2/750 [00:00<03:15,  3.83it/s]Loading weights:   2%|▏         | 15/750 [00:00<00:23, 31.55it/s]Loading weights:   4%|▎         | 27/750 [00:00<00:14, 50.48it/s]Loading weights:   5%|▌         | 38/750 [00:00<00:11, 64.44it/s]Loading weights:   7%|▋         | 49/750 [00:00<00:09, 74.03it/s]Loading weights:   8%|▊         | 61/750 [00:01<00:08, 81.60it/s]Loading weights:  10%|▉         | 72/750 [00:01<00:07, 88.58it/s]Loading weights:  11%|█         | 83/750 [00:01<00:07, 93.04it/s]Loading weights:  13%|█▎        | 94/750 [00:01<00:06, 96.18it/s]Loading weights:  14%|█▍        | 105/750 [00:01<00:06, 96.42it/s]Loading weights:  16%|█▌        | 120/750 [00:01<00:05, 106.42it/s]Loading weights:  18%|█▊        | 133/750 [00:01<00:05, 112.79it/s]Loading weights:  19%|█▉        | 145/750 [00:01<00:05, 113.71it/s]Loading weights:  21%|██        | 157/750 [00:01<00:05, 107.72it/s]Loading weights:  23%|██▎       | 169/750 [00:02<00:05, 110.29it/s]Loading weights:  24%|██▍       | 181/750 [00:02<00:05, 103.37it/s]Loading weights:  26%|██▌       | 192/750 [00:02<00:05, 100.25it/s]Loading weights:  27%|██▋       | 203/750 [00:02<00:05, 95.10it/s] Loading weights:  29%|██▉       | 219/750 [00:02<00:04, 111.87it/s]Loading weights:  31%|███       | 231/750 [00:02<00:04, 108.71it/s]Loading weights:  32%|███▏      | 243/750 [00:02<00:04, 109.66it/s]Loading weights:  34%|███▍      | 255/750 [00:02<00:04, 111.09it/s]Loading weights:  36%|███▌      | 267/750 [00:02<00:04, 108.90it/s]Loading weights:  37%|███▋      | 279/750 [00:03<00:05, 92.88it/s] Loading weights:  39%|███▉      | 291/750 [00:03<00:04, 97.33it/s]Loading weights:  40%|████      | 303/750 [00:03<00:04, 98.68it/s]Loading weights:  42%|████▏     | 314/750 [00:03<00:04, 100.30it/s]Loading weights:  43%|████▎     | 325/750 [00:03<00:04, 98.57it/s] Loading weights:  45%|████▌     | 338/750 [00:03<00:03, 105.48it/s]Loading weights:  47%|████▋     | 349/750 [00:03<00:03, 106.21it/s]Loading weights:  48%|████▊     | 362/750 [00:03<00:03, 112.50it/s]Loading weights:  50%|████▉     | 374/750 [00:04<00:03, 105.97it/s]Loading weights:  52%|█████▏    | 389/750 [00:04<00:03, 108.57it/s]Loading weights:  60%|██████    | 451/750 [00:04<00:01, 240.94it/s]Loading weights:  77%|███████▋  | 578/750 [00:04<00:00, 514.02it/s]Loading weights:  95%|█████████▍| 712/750 [00:04<00:00, 740.77it/s]Loading weights: 100%|██████████| 750/750 [00:04<00:00, 163.15it/s]
+The following generation flags are not valid and may be ignored: ['temperature', 'top_p', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
