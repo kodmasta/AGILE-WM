@@ -18,7 +18,6 @@ from typing import Dict, Optional, Tuple
 import numpy as np
 import tensorflow as tf
 
-from fusion_reconstruction_experiment import configure_tensorflow_memory_growth, load_config, resolve_path
 from rnn.rnn import MDNRNN
 
 
@@ -30,6 +29,38 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 SCRIPT_DIR = Path(__file__).resolve().parent
+
+
+def load_config(path: Path) -> dict:
+    config = {}
+    with path.open("r", encoding="utf-8") as handle:
+        for raw_line in handle:
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.split("#", 1)[0].strip()
+            if key:
+                config[key] = value
+    return config
+
+
+def resolve_path(path_like: Optional[str]) -> Optional[Path]:
+    if path_like is None:
+        return None
+    path = Path(path_like).expanduser()
+    if path.is_absolute():
+        return path
+    return (SCRIPT_DIR / path).resolve()
+
+
+def configure_tensorflow_memory_growth() -> None:
+    try:
+        for gpu in tf.config.list_physical_devices("GPU"):
+            tf.config.experimental.set_memory_growth(gpu, True)
+    except Exception as exc:
+        log.warning("Could not enable TensorFlow memory growth: %s", exc)
 
 
 @dataclass
