@@ -1,0 +1,32 @@
+{
+  "series_dir": "/home/mila/h/hengh/scratch/AGILE-WM/results/WorldModels/CarRacing-v0/series",
+  "rnn_dir": "/home/mila/h/hengh/scratch/AGILE-WM/results/WorldModels/CarRacing-v0/tf_rnn",
+  "reconstruction_dir": "/home/mila/h/hengh/CODE/AGILE-WM/fusion_reconstruction_runs/shard0_ep5_cbp544",
+  "rollout_path": "/network/scratch/h/hengh/my_dataset/rollouts/episode_000001.npz",
+  "rollout_index": 1,
+  "start_frame_index": 810,
+  "end_frame_index": 810,
+  "num_frames": 1,
+  "source_frame_indices": [
+    860
+  ],
+  "actions": [
+    [
+      0.17279855906963348,
+      0.0021604057401418686,
+      0.0
+    ]
+  ],
+  "vae_dim": 32,
+  "fused_dim": 544,
+  "fused_representation_type": "cbp_fused",
+  "clip_checkpoint": "/network/scratch/h/hengh/AGILE-WM/clip_finetune/merged_final",
+  "projection_weights": "best_projection.weights.h5",
+  "preview_title": null,
+  "preview_columns": [
+    "GT",
+    "t",
+    "t+1"
+  ],
+  "output_path": "/home/mila/h/hengh/CODE/AGILE-WM/results/WorldModels/CarRacing-v0/rnn_prediction_preview/rollout_0001_frames_0810_0810.png"
+}

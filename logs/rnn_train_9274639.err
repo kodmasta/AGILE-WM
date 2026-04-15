@@ -1,0 +1,152 @@
+[=== Module python/3.10 loaded ===]
+Using CPython 3.10.11 interpreter at: /cvmfs/ai.mila.quebec/apps/arch/distro/python/3.10/bin/python3.10
+Creating virtual environment at: /tmp/agile-wm-rnn-9274639/train-env
+Activate with: source /tmp/agile-wm-rnn-9274639/train-env/bin/activate
+Uninstalled 33 packages in 50.87s
+Installed 4 packages in 8.80s
+ - astunparse==1.6.3
+ - attrs==26.1.0
+ - charset-normalizer==3.4.7
+ - cloudpickle==3.1.2
+ - decorator==5.2.1
+ - dm-tree==0.1.10
+ - flatbuffers==25.12.19
+ - gast==0.7.0
+ - google-pasta==0.2.0
+ - h5py==3.16.0
+ - keras==3.11.3
+ - libclang==18.1.1
+ - ml-dtypes==0.5.4
+ - namex==0.1.0
+ - numpy==2.0.2
+ + numpy==2.2.6
+ - opt-einsum==3.4.0
+ - optree==0.19.0
+ - protobuf==5.29.6
+ + protobuf==7.34.1
+ - requests==2.33.1
+ - six==1.17.0
+ - sympy==1.13.1
+ + sympy==1.14.0
+ - tensorboard==2.18.0
+ + tensorboard==2.20.0
+ - tensorflow==2.18.1
+ - tensorflow-io-gcs-filesystem==0.37.1
+ - tensorflow-probability==0.25.0
+ - termcolor==3.3.0
+ - tf-keras==2.18.0
+ - torch==2.6.0+cpu
+ - torchaudio==2.6.0+cpu
+ - torchvision==0.21.0+cpu
+ - urllib3==2.6.3
+ - wheel==0.46.3
+ - wrapt==2.1.2
+Using Python 3.10.11 environment at: /tmp/agile-wm-rnn-9274639/train-env
+Resolved 56 packages in 247ms
+Installed 56 packages in 27.08s
+ + absl-py==2.4.0
+ + astunparse==1.6.3
+ + attrs==26.1.0
+ + certifi==2026.2.25
+ + charset-normalizer==3.4.7
+ + cloudpickle==3.1.2
+ + decorator==5.2.1
+ + dm-tree==0.1.10
+ + flatbuffers==25.12.19
+ + gast==0.7.0
+ + google-pasta==0.2.0
+ + grpcio==1.80.0
+ + h5py==3.16.0
+ + idna==3.11
+ + keras==3.12.1
+ + libclang==18.1.1
+ + markdown==3.10.2
+ + markdown-it-py==4.0.0
+ + markupsafe==3.0.3
+ + mdurl==0.1.2
+ + ml-dtypes==0.5.4
+ + namex==0.1.0
+ + numpy==2.0.2
+ + nvidia-cublas-cu12==12.5.3.2
+ + nvidia-cuda-cupti-cu12==12.5.82
+ + nvidia-cuda-nvcc-cu12==12.5.82
+ + nvidia-cuda-nvrtc-cu12==12.5.82
+ + nvidia-cuda-runtime-cu12==12.5.82
+ + nvidia-cudnn-cu12==9.3.0.75
+ + nvidia-cufft-cu12==11.2.3.61
+ + nvidia-curand-cu12==10.3.6.82
+ + nvidia-cusolver-cu12==11.6.3.83
+ + nvidia-cusparse-cu12==12.5.1.3
+ + nvidia-nccl-cu12==2.21.5
+ + nvidia-nvjitlink-cu12==12.5.82
+ + opt-einsum==3.4.0
+ + optree==0.19.0
+ + packaging==26.1
+ + protobuf==5.29.6
+ + pygments==2.20.0
+ + requests==2.33.1
+ + rich==15.0.0
+ + setuptools==82.0.1
+ + six==1.17.0
+ + tensorboard==2.18.0
+ + tensorboard-data-server==0.7.2
+ + tensorflow==2.18.1
+ + tensorflow-io-gcs-filesystem==0.37.1
+ + tensorflow-probability==0.25.0
+ + termcolor==3.3.0
+ + tf-keras==2.18.0
+ + typing-extensions==4.15.0
+ + urllib3==2.6.3
+ + werkzeug==3.1.8
+ + wheel==0.46.3
+ + wrapt==2.1.2
+2026-04-15 01:52:28.476543: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:477] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1776232348.494811 1092305 cuda_dnn.cc:8310] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1776232348.500327 1092305 cuda_blas.cc:1418] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+2026-04-15 01:52:28.517112: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2026-04-15 01:52:37.756790: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:477] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1776232357.774955 1092351 cuda_dnn.cc:8310] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1776232357.780582 1092351 cuda_blas.cc:1418] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+2026-04-15 01:52:37.798369: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+01:52:40  INFO      Training the RNN directly on CBP-fused latent codes with dim 544; the VAE decoder still consumes the projection output of dim 32.
+I0000 00:00:1776232360.240481 1092351 gpu_device.cc:2022] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 44321 MB memory:  -> device: 0, name: Quadro RTX 8000, pci bus id: 0000:a3:00.0, compute capability: 7.5
+/tmp/agile-wm-rnn-9274639/train-env/lib/python3.10/site-packages/keras/src/layers/core/input_layer.py:27: UserWarning: Argument `input_shape` is deprecated. Use `shape` instead.
+  warnings.warn(
+01:52:41  INFO      Loaded 30 rollouts -> 1410 total sequences (940 frames / 20 per chunk, latent_dim=544, input_width=547)
+I0000 00:00:1776232363.188895 1092370 cuda_dnn.cc:529] Loaded cuDNN version 90300
+01:52:48  INFO      step: 20, train_time_taken: 6.1473, lr: 0.001000, train_total: 0.5541, train_MDN: 0.5541, val_total: 0.4644, val_MDN: 0.4644
+01:52:51  INFO      step: 40, train_time_taken: 3.1865, lr: 0.001000, train_total: 0.3252, train_MDN: 0.3252, val_total: 0.2499, val_MDN: 0.2499
+01:52:53  INFO      step: 60, train_time_taken: 2.9183, lr: 0.001000, train_total: 0.1729, train_MDN: 0.1729, val_total: 0.1212, val_MDN: 0.1212
+01:52:56  INFO      step: 80, train_time_taken: 2.9177, lr: 0.001000, train_total: 0.1395, train_MDN: 0.1395, val_total: 0.0531, val_MDN: 0.0531
+01:52:59  INFO      step: 100, train_time_taken: 2.9211, lr: 0.001000, train_total: 0.0468, train_MDN: 0.0468, val_total: -0.0010, val_MDN: -0.0010
+01:53:02  INFO      step: 120, train_time_taken: 2.9165, lr: 0.001000, train_total: -0.0003, train_MDN: -0.0003, val_total: -0.0313, val_MDN: -0.0313
+01:53:05  INFO      step: 140, train_time_taken: 2.9054, lr: 0.001000, train_total: -0.0004, train_MDN: -0.0004, val_total: -0.0474, val_MDN: -0.0474
+01:53:08  INFO      step: 160, train_time_taken: 2.9143, lr: 0.001000, train_total: -0.0279, train_MDN: -0.0279, val_total: -0.0667, val_MDN: -0.0667
+01:53:11  INFO      step: 180, train_time_taken: 2.9050, lr: 0.001000, train_total: -0.0818, train_MDN: -0.0818, val_total: -0.0759, val_MDN: -0.0759
+01:53:14  INFO      step: 200, train_time_taken: 2.9059, lr: 0.001000, train_total: -0.0501, train_MDN: -0.0501, val_total: -0.0670, val_MDN: -0.0670
+01:53:17  INFO      step: 220, train_time_taken: 2.9066, lr: 0.001000, train_total: -0.0951, train_MDN: -0.0951, val_total: -0.0964, val_MDN: -0.0964
+01:53:20  INFO      step: 240, train_time_taken: 2.9044, lr: 0.001000, train_total: -0.1086, train_MDN: -0.1086, val_total: -0.1084, val_MDN: -0.1084
+01:53:23  INFO      step: 260, train_time_taken: 2.9086, lr: 0.001000, train_total: -0.1357, train_MDN: -0.1357, val_total: -0.1169, val_MDN: -0.1169
+01:53:26  INFO      step: 280, train_time_taken: 2.9299, lr: 0.001000, train_total: -0.1440, train_MDN: -0.1440, val_total: -0.1107, val_MDN: -0.1107
+01:53:28  INFO      step: 300, train_time_taken: 2.9104, lr: 0.001000, train_total: -0.1624, train_MDN: -0.1624, val_total: -0.1210, val_MDN: -0.1210
+01:53:31  INFO      step: 320, train_time_taken: 2.9093, lr: 0.001000, train_total: -0.1616, train_MDN: -0.1616, val_total: -0.1245, val_MDN: -0.1245
+01:53:34  INFO      step: 340, train_time_taken: 2.9068, lr: 0.001000, train_total: -0.1514, train_MDN: -0.1514, val_total: -0.1341, val_MDN: -0.1341
+01:53:37  INFO      step: 360, train_time_taken: 2.9170, lr: 0.001000, train_total: -0.1621, train_MDN: -0.1621, val_total: -0.1256, val_MDN: -0.1256
+01:53:40  INFO      step: 380, train_time_taken: 2.9026, lr: 0.001000, train_total: -0.1892, train_MDN: -0.1892, val_total: -0.1337, val_MDN: -0.1337
+01:53:43  INFO      step: 400, train_time_taken: 2.9056, lr: 0.001000, train_total: -0.1856, train_MDN: -0.1856, val_total: -0.1138, val_MDN: -0.1138
+01:53:46  INFO      step: 420, train_time_taken: 2.8977, lr: 0.001000, train_total: -0.2015, train_MDN: -0.2015, val_total: -0.1252, val_MDN: -0.1252
+01:53:49  INFO      step: 440, train_time_taken: 2.9034, lr: 0.001000, train_total: -0.2268, train_MDN: -0.2268, val_total: -0.1199, val_MDN: -0.1199
+01:53:52  INFO      step: 460, train_time_taken: 2.9024, lr: 0.001000, train_total: -0.2096, train_MDN: -0.2096, val_total: -0.1206, val_MDN: -0.1206
+01:53:55  INFO      step: 480, train_time_taken: 2.8971, lr: 0.001000, train_total: -0.2266, train_MDN: -0.2266, val_total: -0.1237, val_MDN: -0.1237
+01:53:57  INFO      step: 500, train_time_taken: 2.9108, lr: 0.001000, train_total: -0.2531, train_MDN: -0.2531, val_total: -0.1147, val_MDN: -0.1147
+01:54:00  INFO      step: 520, train_time_taken: 2.8996, lr: 0.001000, train_total: -0.2627, train_MDN: -0.2627, val_total: -0.1126, val_MDN: -0.1126
+01:54:03  INFO      step: 540, train_time_taken: 2.9017, lr: 0.001000, train_total: -0.2317, train_MDN: -0.2317, val_total: -0.1132, val_MDN: -0.1132
+01:54:06  INFO      step: 560, train_time_taken: 2.8983, lr: 0.001000, train_total: -0.2349, train_MDN: -0.2349, val_total: -0.1278, val_MDN: -0.1278
+01:54:09  INFO      step: 580, train_time_taken: 2.8955, lr: 0.001000, train_total: -0.2653, train_MDN: -0.2653, val_total: -0.1231, val_MDN: -0.1231
+01:54:12  INFO      step: 600, train_time_taken: 2.8988, lr: 0.001000, train_total: -0.2809, train_MDN: -0.2809, val_total: -0.1322, val_MDN: -0.1322
+01:54:15  INFO      step: 620, train_time_taken: 2.9065, lr: 0.001000, train_total: -0.2647, train_MDN: -0.2647, val_total: -0.1142, val_MDN: -0.1142
+[2026-04-15T01:54:16.574] error: *** JOB 9274639 ON cn-c040 CANCELLED AT 2026-04-15T01:54:16 DUE to SIGNAL Terminated ***

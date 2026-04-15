@@ -8,21 +8,28 @@ import argparse
 import json
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Tuple
+from typing import Sequence, Tuple
 
 import numpy as np
 import tensorflow as tf
+import torch
 from PIL import Image, ImageDraw, ImageFont
 
 from fusion_reconstruction_experiment import (
     _load_saved_model_weights,
     build_model_args,
     configure_tensorflow_memory_growth,
+    ensure_supported_cuda_device,
+    extract_clip_features,
+    extract_vae_latents,
     find_vae_checkpoint_dir,
+    load_clip_model,
     load_config,
     resolve_path,
+    resolve_clip_checkpoint_dir,
 )
 from rnn.rnn import MDNRNN
+from series import load_cbp, load_rollout
 from vae.vae import CVAE
 
 
@@ -66,18 +73,14 @@ def load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def load_series_store(series_dir: Path) -> dict:
+def load_series_metadata(series_dir: Path) -> dict:
     metadata = load_json(series_dir / "metadata.json")
     if metadata.get("fused_representation_type") != "cbp_fused":
         raise ValueError(
             f"Series cache in {series_dir} uses fused_representation_type={metadata.get('fused_representation_type')!r}. "
             "Re-run series.py to build a CBP-fused cache before using this script."
         )
-    return {
-        "metadata": metadata,
-        "fused_latents": np.load(series_dir / "fused_latents.npy", mmap_mode="r"),
-        "actions": np.load(series_dir / "actions.npy", mmap_mode="r"),
-    }
+    return metadata
 
 
 def build_rnn_args(config: dict, metadata: dict) -> SimpleNamespace:
@@ -134,6 +137,86 @@ def load_projection(reconstruction_dir: Path, fusion_dim: int, z_size: int, use_
     return projection
 
 
+def resolve_rollout_path(metadata: dict, rollout_index: int) -> Path:
+    rollout_dir = Path(metadata["rollout_dir"])
+    rollout_files = metadata.get("rollout_files") or []
+    if rollout_files:
+        rollout_path = rollout_dir / rollout_files[rollout_index]
+        if not rollout_path.exists():
+            raise FileNotFoundError(f"Rollout file not found: {rollout_path}")
+        return rollout_path
+
+    rollout_glob = str(metadata.get("rollout_glob", "episode_*.npz"))
+    candidates = sorted(rollout_dir.glob(rollout_glob))
+    if not 0 <= rollout_index < len(candidates):
+        raise IndexError(f"rollout_index={rollout_index} is outside [0, {len(candidates) - 1}]")
+    return candidates[rollout_index]
+
+
+def load_rollout_sample(metadata: dict, rollout_index: int) -> Tuple[Path, np.ndarray, np.ndarray]:
+    rollout_path = resolve_rollout_path(metadata, rollout_index)
+    obs, actions, _, _ = load_rollout(
+        rollout_path=rollout_path,
+        source_frames_per_rollout=int(metadata["source_frames_per_rollout"]),
+        discard_start_frames=int(metadata.get("discard_start_frames", 0)),
+        cached_frames_per_rollout=int(metadata["frames_per_rollout"]),
+    )
+    return rollout_path, obs, actions
+
+
+def load_clip_encoder(
+    metadata: dict,
+    explicit_clip_checkpoint: str | None,
+    hf_cache_dir: str | None,
+    local_files_only: bool,
+    clip_device_name: str,
+):
+    clip_checkpoint = resolve_path(explicit_clip_checkpoint)
+    if clip_checkpoint is None:
+        clip_checkpoint = resolve_path(metadata.get("clip_checkpoint"))
+    clip_checkpoint = resolve_clip_checkpoint_dir(clip_checkpoint)
+
+    clip_device = torch.device(
+        clip_device_name if clip_device_name != "auto" else ("cuda" if torch.cuda.is_available() else "cpu")
+    )
+    ensure_supported_cuda_device(clip_device)
+    clip_model, clip_processor = load_clip_model(
+        checkpoint_dir=clip_checkpoint,
+        cache_dir=resolve_path(hf_cache_dir),
+        local_files_only=local_files_only,
+    )
+    clip_model.to(clip_device)
+    return clip_model, clip_processor, clip_device, clip_checkpoint
+
+
+def encode_frame_to_fused_latent(
+    frame: np.ndarray,
+    vae: CVAE,
+    clip_model,
+    clip_processor,
+    clip_device: torch.device,
+    cbp,
+    clip_feature_source: str,
+    vae_latent_source: str,
+    normalize_clip_features: bool,
+) -> np.ndarray:
+    batch_images = frame[None, ...].astype(np.float32) / 255.0
+    vae_latent = extract_vae_latents(vae, batch_images, vae_latent_source)
+    clip_feature = extract_clip_features(
+        clip_model,
+        clip_processor,
+        batch_images,
+        clip_device,
+        clip_feature_source,
+        normalize_clip_features,
+    )
+    fused_latent = cbp(
+        tf.convert_to_tensor(vae_latent, dtype=tf.float32),
+        tf.convert_to_tensor(clip_feature, dtype=tf.float32),
+    )
+    return fused_latent.numpy()[0].astype(np.float32)
+
+
 def predict_next_latent(rnn: MDNRNN, z_sequence: np.ndarray, action_sequence: np.ndarray) -> np.ndarray:
     inputs = np.concatenate([z_sequence, action_sequence], axis=-1).astype(np.float32)[None, :, :]
     outputs = rnn(tf.convert_to_tensor(inputs, dtype=tf.float32), training=False)
@@ -152,40 +235,94 @@ def decode_fused_latent(fused_latent: np.ndarray, projection: tf.keras.Sequentia
     return np.clip(reconstruction * 255.0, 0.0, 255.0).astype(np.uint8)
 
 
-def make_two_frame_image(frame0: np.ndarray, frame1: np.ndarray, output_path: Path) -> None:
-    title_height = 32
-    gap = 12
-    panel_width = frame0.shape[1]
-    panel_height = frame0.shape[0]
-    canvas = Image.new("RGB", (panel_width * 2 + gap * 3, panel_height + title_height + gap * 2), color=(255, 255, 255))
-    draw = ImageDraw.Draw(canvas)
+def measure_text(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont) -> Tuple[int, int]:
+    left, top, right, bottom = draw.textbbox((0, 0), text, font=font)
+    return right - left, bottom - top
+
+
+def make_comparison_sheet(
+    frame_indices: Sequence[int],
+    original_frames: Sequence[np.ndarray],
+    current_frames: Sequence[np.ndarray],
+    predicted_frames: Sequence[np.ndarray],
+    output_path: Path,
+) -> None:
+    if (
+        len(frame_indices) != len(original_frames)
+        or len(original_frames) != len(current_frames)
+        or len(current_frames) != len(predicted_frames)
+        or not original_frames
+        or not current_frames
+        or not predicted_frames
+    ):
+        raise ValueError("original_frames, current_frames, and predicted_frames must be non-empty and aligned")
+
     font = ImageFont.load_default()
+    tile_width = 64
+    tile_height = 64
+    title_height = 0
+    header_height = 24
+    column_labels = ("GT", "t", "t+1")
 
-    draw.text((gap, 8), "frame 0", fill=(0, 0, 0), font=font)
-    draw.text((panel_width + gap * 2, 8), "frame 1", fill=(0, 0, 0), font=font)
+    grid = Image.new(
+        "RGB",
+        (tile_width * 3, title_height + header_height + tile_height * len(frame_indices)),
+        color=(255, 255, 255),
+    )
+    draw = ImageDraw.Draw(grid)
 
-    canvas.paste(Image.fromarray(frame0, mode="RGB"), (gap, title_height + gap))
-    canvas.paste(Image.fromarray(frame1, mode="RGB"), (panel_width + gap * 2, title_height + gap))
+    for column, label in enumerate(column_labels):
+        label_width, label_height = measure_text(draw, label, font)
+        label_x = column * tile_width + (tile_width - label_width) // 2
+        label_y = title_height + (header_height - label_height) // 2
+        draw.text((label_x, label_y), label, fill=(0, 0, 0), font=font)
+
+    for row, (original_frame, current_frame, predicted_frame) in enumerate(
+        zip(original_frames, current_frames, predicted_frames)
+    ):
+        y_offset = title_height + header_height + row * tile_height
+        grid.paste(Image.fromarray(original_frame, mode="RGB"), (0, y_offset))
+        grid.paste(Image.fromarray(current_frame, mode="RGB"), (tile_width, y_offset))
+        grid.paste(Image.fromarray(predicted_frame, mode="RGB"), (tile_width * 2, y_offset))
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    canvas.save(output_path)
+    grid.save(output_path)
 
 
 def choose_output_path(args: argparse.Namespace, exp_name: str, env_name: str) -> Path:
     explicit = resolve_path(args.output_path)
     if explicit is not None:
         return explicit
+    end_frame_index = args.frame_index + args.num_frames - 1
     return SCRIPT_DIR / "results" / exp_name / env_name / "rnn_prediction_preview" / (
-        f"rollout_{args.rollout_index:04d}_frame_{args.frame_index:04d}.png"
+        f"rollout_{args.rollout_index:04d}_frames_{args.frame_index:04d}_{end_frame_index:04d}.png"
     )
 
 
-def validate_indices(store: dict, rollout_index: int, frame_index: int) -> None:
-    num_rollouts = int(store["fused_latents"].shape[0])
-    frames_per_rollout = int(store["actions"].shape[1])
+def validate_indices(
+    metadata: dict,
+    obs: np.ndarray,
+    actions: np.ndarray,
+    rollout_index: int,
+    frame_index: int,
+    num_frames: int,
+) -> None:
+    num_rollouts = int(metadata["num_rollouts"])
+    frames_per_rollout = int(actions.shape[0])
     if not 0 <= rollout_index < num_rollouts:
         raise IndexError(f"rollout_index={rollout_index} is outside [0, {num_rollouts - 1}]")
     if not 0 <= frame_index < frames_per_rollout:
         raise IndexError(f"frame_index={frame_index} is outside [0, {frames_per_rollout - 1}]")
+    if num_frames <= 0:
+        raise ValueError("num_frames must be positive")
+    if frame_index + num_frames > frames_per_rollout:
+        raise IndexError(
+            f"Requested frames [{frame_index}, {frame_index + num_frames - 1}] but rollout only has frame indices [0, {frames_per_rollout - 1}]"
+        )
+    if obs.shape[0] != frames_per_rollout + 1:
+        raise ValueError(
+            f"Expected obs to contain frames_per_rollout + 1 frames, got obs.shape[0]={obs.shape[0]} and actions.shape[0]={frames_per_rollout}."
+        )
 
 
 def main(args: argparse.Namespace) -> None:
@@ -201,9 +338,9 @@ def main(args: argparse.Namespace) -> None:
     if reconstruction_dir is None or not reconstruction_dir.exists():
         raise FileNotFoundError(f"Reconstruction directory not found: {args.reconstruction_dir}")
 
-    store = load_series_store(series_dir)
-    validate_indices(store, args.rollout_index, args.frame_index)
-    metadata = store["metadata"]
+    metadata = load_series_metadata(series_dir)
+    rollout_path, obs, actions = load_rollout_sample(metadata, args.rollout_index)
+    validate_indices(metadata, obs, actions, args.rollout_index, args.frame_index, args.num_frames)
 
     model_args = build_model_args(config, args)
     vae_checkpoint = find_vae_checkpoint_dir(model_args, resolve_path(args.vae_checkpoint))
@@ -211,6 +348,7 @@ def main(args: argparse.Namespace) -> None:
 
     rnn, rnn_args = load_rnn(rnn_dir, config, metadata)
     reconstruction_config = load_json(reconstruction_dir / "run_config.json")
+    cbp = load_cbp(reconstruction_dir / "cbp_state.npz")
     projection = load_projection(
         reconstruction_dir=reconstruction_dir,
         fusion_dim=int(reconstruction_config["fusion_dim"]),
@@ -218,33 +356,70 @@ def main(args: argparse.Namespace) -> None:
         use_best=not args.use_last_projection,
     )
 
-    chunk_size = int(metadata["chunk_size"])
-    chunk_start = (args.frame_index // chunk_size) * chunk_size
-    prefix_end = args.frame_index + 1
+    clip_model, clip_processor, clip_device, clip_checkpoint = load_clip_encoder(
+        metadata=metadata,
+        explicit_clip_checkpoint=args.clip_checkpoint,
+        hf_cache_dir=args.hf_cache_dir,
+        local_files_only=args.local_files_only,
+        clip_device_name=args.clip_device,
+    )
 
-    z_prefix = np.asarray(store["fused_latents"][args.rollout_index, chunk_start:prefix_end], dtype=np.float32)
-    action_prefix = np.asarray(store["actions"][args.rollout_index, chunk_start:prefix_end], dtype=np.float32)
-    current_latent = np.asarray(store["fused_latents"][args.rollout_index, args.frame_index], dtype=np.float32)
-    predicted_next_latent = predict_next_latent(rnn, z_prefix, action_prefix)
+    clip_feature_source = str(metadata.get("clip_feature_source", reconstruction_config.get("clip_feature_source", "image_features")))
+    vae_latent_source = str(metadata.get("vae_latent_source", reconstruction_config.get("vae_latent_source", "mean")))
+    normalize_clip_features = bool(metadata.get("normalize_clip_features", False))
 
-    current_frame = decode_fused_latent(current_latent, projection, vae)
-    predicted_frame = decode_fused_latent(predicted_next_latent, projection, vae)
+    frame_indices = []
+    original_frames = []
+    current_frames = []
+    predicted_frames = []
+    actions_summary = []
+
+    for offset in range(args.num_frames):
+        frame_index = args.frame_index + offset
+        current_latent = encode_frame_to_fused_latent(
+            frame=obs[frame_index],
+            vae=vae,
+            clip_model=clip_model,
+            clip_processor=clip_processor,
+            clip_device=clip_device,
+            cbp=cbp,
+            clip_feature_source=clip_feature_source,
+            vae_latent_source=vae_latent_source,
+            normalize_clip_features=normalize_clip_features,
+        )
+        current_action = np.asarray(actions[frame_index:frame_index + 1], dtype=np.float32)
+        predicted_next_latent = predict_next_latent(rnn, current_latent[None, :], current_action)
+
+        frame_indices.append(int(frame_index))
+        original_frames.append(np.asarray(obs[frame_index], dtype=np.uint8))
+        current_frames.append(decode_fused_latent(current_latent, projection, vae))
+        predicted_frames.append(decode_fused_latent(predicted_next_latent, projection, vae))
+        actions_summary.append(current_action[0].tolist())
 
     output_path = choose_output_path(args, exp_name, env_name)
-    make_two_frame_image(current_frame, predicted_frame, output_path)
+    projection_label = "last_projection.weights.h5" if args.use_last_projection else "best_projection.weights.h5"
+    make_comparison_sheet(frame_indices, original_frames, current_frames, predicted_frames, output_path)
 
     summary = {
         "series_dir": str(series_dir),
         "rnn_dir": str(rnn_dir),
         "reconstruction_dir": str(reconstruction_dir),
+        "rollout_path": str(rollout_path),
         "rollout_index": int(args.rollout_index),
-        "frame_index": int(args.frame_index),
-        "source_frame_index": int(metadata.get("discard_start_frames", 0) + args.frame_index),
-        "chunk_start": int(chunk_start),
-        "action": action_prefix[-1].tolist(),
+        "start_frame_index": int(args.frame_index),
+        "end_frame_index": int(args.frame_index + args.num_frames - 1),
+        "num_frames": int(args.num_frames),
+        "source_frame_indices": [
+            int(metadata.get("discard_start_frames", 0) + frame_index) for frame_index in frame_indices
+        ],
+        "actions": actions_summary,
         "vae_dim": int(model_args.z_size),
         "fused_dim": int(rnn_args.z_size),
         "fused_representation_type": str(metadata["fused_representation_type"]),
+        "clip_checkpoint": str(clip_checkpoint),
+        "projection_weights": projection_label,
+        "preview_title": None,
+        "preview_columns": ["GT", "t", "t+1"],
         "output_path": str(output_path),
     }
     output_path.with_suffix(".json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
@@ -262,19 +437,24 @@ def parse_args() -> argparse.Namespace:
         config = load_config(config_path)
 
     parser = argparse.ArgumentParser(
-        description="Predict the next latent state from a saved RNN and reconstruct frame 0 and predicted frame 1."
+        description="Render GT, fused-latent reconstruction, and RNN-predicted reconstruction from saved models."
     )
     parser.add_argument("--config_path", default=str(config_path))
     parser.add_argument("--series_dir", default=None, help="Defaults to results/<exp>/<env>/series")
     parser.add_argument("--rnn_dir", default=None, help="Defaults to results/<exp>/<env>/tf_rnn")
     parser.add_argument("--reconstruction_dir", default="fusion_reconstruction_runs/shard0_ep5_cbp544")
     parser.add_argument("--vae_checkpoint", default=None)
+    parser.add_argument("--clip_checkpoint", default=None)
     parser.add_argument("--env_name", default=config.get("env_name", "CarRacing-v0"))
     parser.add_argument("--exp_name", default=config.get("exp_name", "WorldModels"))
     parser.add_argument("--z_size", type=int, default=int(config.get("z_size", 32)))
     parser.add_argument("--rollout_index", type=int, default=0)
     parser.add_argument("--frame_index", type=int, default=0)
+    parser.add_argument("--num_frames", type=int, default=1)
     parser.add_argument("--output_path", default=None)
+    parser.add_argument("--clip_device", default="auto", help="auto, cpu, or cuda[:index].")
+    parser.add_argument("--hf_cache_dir", default=None)
+    parser.add_argument("--local_files_only", action="store_true")
     parser.add_argument("--use_last_projection", action="store_true")
     return parser.parse_args()
 

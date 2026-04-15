@@ -2,8 +2,13 @@ import numpy as np
 from collections import namedtuple
 
 import tensorflow as tf
-from tensorflow_probability import distributions as tfd
-import tensorflow_probability as tfp
+
+try:
+    from tensorflow_probability import distributions as tfd
+    import tensorflow_probability as tfp
+except ImportError:
+    tfd = None
+    tfp = None
 
 # controls whether we concatenate (z, c, h), etc for features used for car.
 MODE_ZCH = 0
@@ -14,6 +19,8 @@ MODE_ZH = 4
 
 @tf.function
 def sample_vae(vae_mu, vae_logvar):
+    if tfp is None:
+        raise ImportError("tensorflow_probability is required for sample_vae")
     sz = vae_mu.shape[1]
     mu_logvar = tf.concat([vae_mu, vae_logvar], axis=1)
     z = tfp.layers.DistributionLambda(lambda theta: tfp.distributions.MultivariateNormalDiag(loc=theta[:, :sz], scale_diag=tf.exp(theta[:, sz:])), dtype=tf.float16)
@@ -147,34 +154,37 @@ def rnn_output(state, z, mode):
     return np.concatenate([z, state_h[0]])
   return z # MODE_Z or MODE_Z_HIDDEN
 @tf.function
-def rnn_sim(rnn, z, states, a, training=True): 
-  z = tf.reshape(tf.cast(z, dtype=tf.float32), (1, 1, rnn.args.z_size))
-  a = tf.reshape(tf.cast(a, dtype=tf.float32), (1, 1, rnn.args.a_width))
-  input_x = tf.concat((z, a), axis=2)
-  rnn_out, h, c = rnn.inference_base(input_x, initial_state=states, training=training) # set training True to use Dropout
-  rnn_state = [h, c]
-  rnn_out = tf.reshape(rnn_out, [-1, rnn.args.rnn_size])
-  out = rnn.out_net(rnn_out)
-  mdnrnn_params, r, d_logits = rnn.parse_rnn_out(out)
-  mdnrnn_params = tf.reshape(mdnrnn_params, [-1, 3*rnn.args.rnn_num_mixture])
-  mu, logstd, logpi = tf.split(mdnrnn_params, num_or_size_splits=3, axis=1)
+def rnn_sim(rnn, z, states, a, training=True):
+    if tfd is None:
+        raise ImportError("tensorflow_probability is required for rnn_sim")
 
-  logpi = logpi / rnn.args.rnn_temperature # temperature
-  logpi = logpi - tf.reduce_logsumexp(input_tensor=logpi, axis=1, keepdims=True) # normalize
+    z = tf.reshape(tf.cast(z, dtype=tf.float32), (1, 1, rnn.args.z_size))
+    a = tf.reshape(tf.cast(a, dtype=tf.float32), (1, 1, rnn.args.a_width))
+    input_x = tf.concat((z, a), axis=2)
+    rnn_out, h, c = rnn.inference_base(input_x, initial_state=states, training=training) # set training True to use Dropout
+    rnn_state = [h, c]
+    rnn_out = tf.reshape(rnn_out, [-1, rnn.args.rnn_size])
+    out = rnn.out_net(rnn_out)
+    mdnrnn_params, r, d_logits = rnn.parse_rnn_out(out)
+    mdnrnn_params = tf.reshape(mdnrnn_params, [-1, 3 * rnn.args.rnn_num_mixture])
+    mu, logstd, logpi = tf.split(mdnrnn_params, num_or_size_splits=3, axis=1)
 
-  d_dist = tfd.Binomial(total_count=1, logits=d_logits)
-  d = tf.squeeze(d_dist.sample()) == 1.0
-  cat = tfd.Categorical(logits=logpi)
-  component_splits = [1] * rnn.args.rnn_num_mixture
-  mus = tf.split(mu, num_or_size_splits=component_splits, axis=1)
+    logpi = logpi / rnn.args.rnn_temperature # temperature
+    logpi = logpi - tf.reduce_logsumexp(input_tensor=logpi, axis=1, keepdims=True) # normalize
 
-  # temperature
-  sigs = tf.split(tf.exp(logstd) * tf.sqrt(rnn.args.rnn_temperature), component_splits, axis=1) 
+    d_dist = tfd.Binomial(total_count=1, logits=d_logits)
+    d = tf.squeeze(d_dist.sample()) == 1.0
+    cat = tfd.Categorical(logits=logpi)
+    component_splits = [1] * rnn.args.rnn_num_mixture
+    mus = tf.split(mu, num_or_size_splits=component_splits, axis=1)
 
-  coll = [tfd.MultivariateNormalDiag(loc=loc, scale_diag=scale) for loc, scale in zip(mus, sigs)]
-  mixture = tfd.Mixture(cat=cat, components=coll)
-  z = tf.reshape(mixture.sample(), shape=(-1, rnn.args.z_size))
-  
-  if rnn.args.rnn_r_pred == 0:
-    r = 1.0 # For Doom Reward is always 1.0 if the agent is alive
-  return rnn_state, z, r, d
+    # temperature
+    sigs = tf.split(tf.exp(logstd) * tf.sqrt(rnn.args.rnn_temperature), component_splits, axis=1)
+
+    coll = [tfd.MultivariateNormalDiag(loc=loc, scale_diag=scale) for loc, scale in zip(mus, sigs)]
+    mixture = tfd.Mixture(cat=cat, components=coll)
+    z = tf.reshape(mixture.sample(), shape=(-1, rnn.args.z_size))
+
+    if rnn.args.rnn_r_pred == 0:
+        r = 1.0 # For Doom Reward is always 1.0 if the agent is alive
+    return rnn_state, z, r, d
