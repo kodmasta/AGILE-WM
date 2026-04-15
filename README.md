@@ -88,12 +88,12 @@ This experiment is separate from rollout collection. It loads a frozen VAE and a
 ```bash
 uv run --python 3.10 python fusion_reconstruction_experiment.py \
   --config_path configs/carracing.config \
-  --data_root outputs \
+  --data_root webdataset_frames \
   --clip_checkpoint path/to/merged_final \
   --output_dir fusion_reconstruction_runs/carracing_cbp
 ```
 
-The script writes training curves, saved projection weights, and preview grids that compare the original frame, the frozen VAE reconstruction baseline, and the reconstruction produced from the fused latent.
+The script now precomputes and caches the frozen VAE latents and CLIP image embeddings once under `output_dir/feature_cache` by default, then trains the projection from those cached arrays. It writes training curves, saved projection weights, the cache metadata, and preview grids that compare the original frame, the frozen VAE reconstruction baseline, and the reconstruction produced from the fused latent.
 
 ## Cluster Usage
 

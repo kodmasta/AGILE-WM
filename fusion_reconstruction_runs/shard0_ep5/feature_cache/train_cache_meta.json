@@ -1,0 +1,23 @@
+{
+  "cached_samples": 900,
+  "clip_checkpoint": "/Users/hengwei/clip_finetune/merged_final",
+  "clip_dim": 512,
+  "clip_feature_source": "image_features",
+  "data_root": "/Users/hengwei/Desktop/AGILE-WM/webdataset_frames/shard-00000.tar",
+  "dataset_size": 1000,
+  "image_shape": [
+    64,
+    64,
+    3
+  ],
+  "indices_digest": "c4ad993a88e0105aac515270f4c647fa80e2569dfc7eee26e5bda35026e0a71f",
+  "max_samples": null,
+  "normalize_clip_features": false,
+  "seed": 42,
+  "shard_glob": "shard-*.tar",
+  "split_name": "train",
+  "vae_checkpoint": "/Users/hengwei/Desktop/AGILE-WM/results/WorldModels/CarRacing/tf_vae",
+  "vae_dim": 32,
+  "vae_latent_source": "mean",
+  "val_split": 0.1
+}

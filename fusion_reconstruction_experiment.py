@@ -1,9 +1,11 @@
 import argparse
 import csv
+import hashlib
 import json
 import logging
 import math
 import tarfile
+from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
 from typing import List, Optional, Sequence, Tuple
@@ -11,7 +13,7 @@ from typing import List, Optional, Sequence, Tuple
 import numpy as np
 import tensorflow as tf
 import torch
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from transformers import CLIPModel, CLIPProcessor
 
 try:
@@ -31,7 +33,7 @@ log = logging.getLogger(__name__)
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
-DEFAULT_SHARD_GLOB = "shard-*-caption-*.tar"
+DEFAULT_SHARD_GLOB = "shard-*.tar"
 
 
 def load_config(path: Path) -> dict:
@@ -126,7 +128,7 @@ class FrameDataset:
 
         if not self.samples:
             raise RuntimeError(
-                f"No images found in {data_root}. Expected caption shards matching '{shard_glob}' or image files."
+                f"No images found in {data_root}. Expected WebDataset shards matching '{shard_glob}' or image files."
             )
 
         if max_samples is not None and len(self.samples) > max_samples:
@@ -219,6 +221,20 @@ class CompactBilinearPooling:
         )
 
 
+@dataclass
+class CachedSplitData:
+    name: str
+    indices: np.ndarray
+    images: np.ndarray
+    vae_latents: np.ndarray
+    clip_features: np.ndarray
+    keys: List[str]
+
+    @property
+    def size(self) -> int:
+        return int(self.indices.shape[0])
+
+
 def build_model_args(config: dict, overrides: argparse.Namespace) -> SimpleNamespace:
     return SimpleNamespace(
         env_name=overrides.env_name or config.get("env_name", "CarRacing-v0"),
@@ -257,14 +273,35 @@ def default_clip_checkpoint_candidates() -> List[Path]:
     return [
         SCRIPT_DIR / "clip_finetune" / "merged_final",
         SCRIPT_DIR / "clip_finetune" / "lora_final",
+        Path.home() / "clip_finetune" / "merged_final",
+        Path.home() / "clip_finetune" / "lora_final",
         SCRIPT_DIR / "merged_final",
         SCRIPT_DIR / "lora_final",
     ]
 
 
+def fallback_home_clip_checkpoint(explicit_path: Path) -> Optional[Path]:
+    try:
+        relative_to_repo = explicit_path.relative_to(SCRIPT_DIR)
+    except ValueError:
+        return None
+
+    parts = relative_to_repo.parts
+    if not parts or parts[0] != "clip_finetune":
+        return None
+
+    home_candidate = Path.home() / relative_to_repo
+    if home_candidate.exists():
+        return home_candidate
+    return None
+
+
 def resolve_clip_checkpoint_dir(explicit_path: Optional[Path]) -> Path:
     if explicit_path is not None:
         if not explicit_path.exists():
+            home_fallback = fallback_home_clip_checkpoint(explicit_path)
+            if home_fallback is not None:
+                return home_fallback
             raise FileNotFoundError(f"CLIP checkpoint not found: {explicit_path}")
         return explicit_path
 
@@ -364,12 +401,28 @@ def extract_clip_features(
     encoded = clip_processor(images=pil_images, return_tensors="pt")
     pixel_values = encoded["pixel_values"].to(device)
 
+    def as_feature_tensor(output, source: str) -> torch.Tensor:
+        if isinstance(output, torch.Tensor):
+            return output
+        if hasattr(output, "image_embeds") and output.image_embeds is not None:
+            return output.image_embeds
+        if hasattr(output, "pooler_output") and output.pooler_output is not None:
+            pooled = output.pooler_output
+            if (
+                source == "image_features"
+                and hasattr(clip_model, "visual_projection")
+                and getattr(clip_model.visual_projection, "in_features", None) == pooled.shape[-1]
+            ):
+                return clip_model.visual_projection(pooled)
+            return pooled
+        raise TypeError(f"Unsupported CLIP feature output type: {type(output)!r}")
+
     with torch.no_grad():
         if feature_source == "image_features":
-            features = clip_model.get_image_features(pixel_values=pixel_values)
+            features = as_feature_tensor(clip_model.get_image_features(pixel_values=pixel_values), feature_source)
         else:
             outputs = clip_model.vision_model(pixel_values=pixel_values)
-            features = outputs.pooler_output
+            features = as_feature_tensor(outputs, feature_source)
         if normalize_features:
             features = torch.nn.functional.normalize(features, dim=-1)
 
@@ -389,6 +442,168 @@ def reconstruction_loss(targets: tf.Tensor, predictions: tf.Tensor) -> tf.Tensor
     return tf.reduce_mean(per_example)
 
 
+def cache_paths(cache_dir: Path, split_name: str) -> dict:
+    prefix = cache_dir / split_name
+    return {
+        "images": prefix.with_name(f"{split_name}_images.npy"),
+        "vae_latents": prefix.with_name(f"{split_name}_vae_latents.npy"),
+        "clip_features": prefix.with_name(f"{split_name}_clip_features.npy"),
+        "indices": prefix.with_name(f"{split_name}_indices.npy"),
+        "keys": prefix.with_name(f"{split_name}_keys.json"),
+        "meta": prefix.with_name(f"{split_name}_cache_meta.json"),
+    }
+
+
+def indices_digest(indices: np.ndarray) -> str:
+    return hashlib.sha256(np.asarray(indices, dtype=np.int64).tobytes()).hexdigest()
+
+
+def cache_metadata_matches(existing_meta: dict, expected_meta: dict) -> bool:
+    return all(existing_meta.get(key) == value for key, value in expected_meta.items())
+
+
+def load_cached_split(cache_dir: Path, split_name: str) -> CachedSplitData:
+    paths = cache_paths(cache_dir, split_name)
+    images = np.load(paths["images"], mmap_mode="r")
+    vae_latents = np.load(paths["vae_latents"], mmap_mode="r")
+    clip_features = np.load(paths["clip_features"], mmap_mode="r")
+    indices = np.load(paths["indices"])
+    keys = json.loads(paths["keys"].read_text(encoding="utf-8"))
+    return CachedSplitData(
+        name=split_name,
+        indices=indices,
+        images=images,
+        vae_latents=vae_latents,
+        clip_features=clip_features,
+        keys=keys,
+    )
+
+
+def prepare_cached_split(
+    *,
+    dataset: FrameDataset,
+    indices: np.ndarray,
+    split_name: str,
+    cache_dir: Path,
+    cache_metadata: dict,
+    rebuild_cache: bool,
+    batch_size: int,
+    vae: CVAE,
+    clip_model: CLIPModel,
+    clip_processor: CLIPProcessor,
+    clip_device: torch.device,
+    feature_source: str,
+    normalize_clip_features: bool,
+    latent_source: str,
+) -> CachedSplitData:
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    paths = cache_paths(cache_dir, split_name)
+    required_paths = [
+        paths["images"],
+        paths["vae_latents"],
+        paths["clip_features"],
+        paths["indices"],
+        paths["keys"],
+        paths["meta"],
+    ]
+
+    if not rebuild_cache and all(path.exists() for path in required_paths):
+        try:
+            existing_meta = json.loads(paths["meta"].read_text(encoding="utf-8"))
+            if cache_metadata_matches(existing_meta, cache_metadata):
+                log.info("Reusing %s cache from %s", split_name, cache_dir)
+                return load_cached_split(cache_dir, split_name)
+            log.info("Rebuilding %s cache because the cache configuration changed", split_name)
+        except Exception as exc:
+            log.info("Rebuilding %s cache because the existing cache could not be read: %s", split_name, exc)
+
+    log.info("Building %s cache with %d samples in %s", split_name, len(indices), cache_dir)
+
+    image_cache = None
+    vae_cache = None
+    clip_cache = None
+    keys: List[str] = []
+    write_offset = 0
+    image_shape = None
+    vae_dim = None
+    clip_dim = None
+
+    for batch_number, batch_indices in enumerate(
+        iter_batches(indices, batch_size=batch_size, shuffle=False, seed=0, epoch=0),
+        start=1,
+    ):
+        batch_images, batch_keys = load_batch_images(dataset, batch_indices)
+        batch_vae_latents = extract_vae_latents(vae, batch_images, latent_source).numpy().astype(np.float32)
+        batch_clip_features = extract_clip_features(
+            clip_model,
+            clip_processor,
+            batch_images,
+            clip_device,
+            feature_source,
+            normalize_clip_features,
+        ).astype(np.float32)
+
+        if image_cache is None:
+            image_shape = batch_images.shape[1:]
+            vae_dim = int(batch_vae_latents.shape[-1])
+            clip_dim = int(batch_clip_features.shape[-1])
+            image_cache = np.lib.format.open_memmap(
+                str(paths["images"]),
+                mode="w+",
+                dtype=np.uint8,
+                shape=(len(indices),) + image_shape,
+            )
+            vae_cache = np.lib.format.open_memmap(
+                str(paths["vae_latents"]),
+                mode="w+",
+                dtype=np.float32,
+                shape=(len(indices), vae_dim),
+            )
+            clip_cache = np.lib.format.open_memmap(
+                str(paths["clip_features"]),
+                mode="w+",
+                dtype=np.float32,
+                shape=(len(indices), clip_dim),
+            )
+
+        batch_size_actual = batch_images.shape[0]
+        batch_end = write_offset + batch_size_actual
+        image_cache[write_offset:batch_end] = np.clip(batch_images * 255.0, 0.0, 255.0).astype(np.uint8)
+        vae_cache[write_offset:batch_end] = batch_vae_latents
+        clip_cache[write_offset:batch_end] = batch_clip_features
+        keys.extend(batch_keys)
+        write_offset = batch_end
+
+        if batch_number == 1 or write_offset == len(indices) or batch_number % 100 == 0:
+            log.info("Cached %s samples: %d/%d", split_name, write_offset, len(indices))
+
+    if image_cache is None or vae_cache is None or clip_cache is None:
+        raise RuntimeError(f"Could not build {split_name} cache because no samples were processed")
+
+    np.save(paths["indices"], np.asarray(indices, dtype=np.int64))
+    paths["keys"].write_text(json.dumps(keys), encoding="utf-8")
+    completed_meta = dict(cache_metadata)
+    completed_meta.update(
+        {
+            "image_shape": list(image_shape),
+            "vae_dim": vae_dim,
+            "clip_dim": clip_dim,
+            "cached_samples": int(write_offset),
+        }
+    )
+    paths["meta"].write_text(json.dumps(completed_meta, indent=2, sort_keys=True), encoding="utf-8")
+
+    del image_cache
+    del vae_cache
+    del clip_cache
+
+    return load_cached_split(cache_dir, split_name)
+
+
+def cached_images_to_float(images: np.ndarray) -> np.ndarray:
+    return images.astype(np.float32) / 255.0
+
+
 def save_history_csv(path: Path, rows: List[dict]) -> None:
     if not rows:
         return
@@ -398,12 +613,32 @@ def save_history_csv(path: Path, rows: List[dict]) -> None:
         writer.writerows(rows)
 
 
+def filter_preview_rows(preview: Optional[dict], preview_rows: Optional[Sequence[int]]) -> Optional[dict]:
+    if preview is None or preview_rows is None:
+        return preview
+
+    max_rows = len(preview["keys"])
+    selected_rows = [row for row in preview_rows if 0 <= row < max_rows]
+    if not selected_rows:
+        raise ValueError(
+            f"None of the requested --preview_rows values are valid for a preview with {max_rows} row(s)."
+        )
+
+    return {
+        "keys": [preview["keys"][row] for row in selected_rows],
+        "images": preview["images"][selected_rows],
+        "baseline": preview["baseline"][selected_rows],
+        "fused": preview["fused"][selected_rows],
+    }
+
+
 def make_preview_grid(
     originals: np.ndarray,
     baseline_recon: np.ndarray,
     fused_recon: np.ndarray,
     sample_keys: Sequence[str],
     output_path: Path,
+    title: Optional[str] = None,
 ) -> None:
     originals_uint8 = np.clip(originals * 255.0, 0.0, 255.0).astype(np.uint8)
     baseline_uint8 = np.clip(baseline_recon * 255.0, 0.0, 255.0).astype(np.uint8)
@@ -411,55 +646,69 @@ def make_preview_grid(
 
     tile_width = 64
     tile_height = 64
+    title_height = 22 if title else 0
+    header_height = 24
     rows = len(sample_keys)
-    grid = Image.new("RGB", (tile_width * 3, tile_height * rows), color=(255, 255, 255))
+    grid = Image.new(
+        "RGB",
+        (tile_width * 3, title_height + header_height + tile_height * rows),
+        color=(255, 255, 255),
+    )
+    draw = ImageDraw.Draw(grid)
+    font = ImageFont.load_default()
+    column_labels = ["GT", "VAE-only", "VAE+CLIP"]
+
+    if title:
+        bbox = draw.textbbox((0, 0), title, font=font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+        x = (tile_width * 3 - text_width) // 2
+        y = (title_height - text_height) // 2
+        draw.text((x, y), title, fill=(0, 0, 0), font=font)
+
+    for column, label in enumerate(column_labels):
+        bbox = draw.textbbox((0, 0), label, font=font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+        x = column * tile_width + (tile_width - text_width) // 2
+        y = title_height + (header_height - text_height) // 2
+        draw.text((x, y), label, fill=(0, 0, 0), font=font)
 
     for row in range(rows):
-        grid.paste(Image.fromarray(originals_uint8[row], mode="RGB"), (0, row * tile_height))
-        grid.paste(Image.fromarray(baseline_uint8[row], mode="RGB"), (tile_width, row * tile_height))
-        grid.paste(Image.fromarray(fused_uint8[row], mode="RGB"), (tile_width * 2, row * tile_height))
+        y_offset = title_height + header_height + row * tile_height
+        grid.paste(Image.fromarray(originals_uint8[row], mode="RGB"), (0, y_offset))
+        grid.paste(Image.fromarray(baseline_uint8[row], mode="RGB"), (tile_width, y_offset))
+        grid.paste(Image.fromarray(fused_uint8[row], mode="RGB"), (tile_width * 2, y_offset))
 
     grid.save(output_path)
 
     labels = {
-        "columns": ["original", "vae_reconstruction", "fused_reconstruction"],
+        "title": title,
+        "columns": ["GT", "VAE-only", "VAE+CLIP"],
         "sample_keys": list(sample_keys),
     }
     output_path.with_suffix(".json").write_text(json.dumps(labels, indent=2), encoding="utf-8")
 
 
 def evaluate(
-    dataset: FrameDataset,
-    indices: np.ndarray,
+    cached_split: CachedSplitData,
     batch_size: int,
     vae: CVAE,
     projection: tf.keras.Sequential,
     cbp: CompactBilinearPooling,
-    clip_model: CLIPModel,
-    clip_processor: CLIPProcessor,
-    clip_device: torch.device,
-    feature_source: str,
-    normalize_clip_features: bool,
-    latent_source: str,
     num_preview: int,
 ) -> dict:
     fused_losses = []
     baseline_losses = []
     preview = None
 
-    for batch_indices in iter_batches(indices, batch_size=batch_size, shuffle=False, seed=0, epoch=0):
-        batch_images, keys = load_batch_images(dataset, batch_indices)
+    cached_indices = np.arange(cached_split.size)
+    for batch_positions in iter_batches(cached_indices, batch_size=batch_size, shuffle=False, seed=0, epoch=0):
+        batch_images = cached_images_to_float(cached_split.images[batch_positions])
         target_images = tf.convert_to_tensor(batch_images, dtype=tf.float32)
-        vae_latents = extract_vae_latents(vae, batch_images, latent_source)
-        clip_features = extract_clip_features(
-            clip_model,
-            clip_processor,
-            batch_images,
-            clip_device,
-            feature_source,
-            normalize_clip_features,
-        )
-        fused_latents = cbp(vae_latents, tf.convert_to_tensor(clip_features, dtype=tf.float32))
+        vae_latents = tf.convert_to_tensor(cached_split.vae_latents[batch_positions], dtype=tf.float32)
+        clip_features = tf.convert_to_tensor(cached_split.clip_features[batch_positions], dtype=tf.float32)
+        fused_latents = cbp(vae_latents, clip_features)
 
         baseline_recon = vae.decode(vae_latents)
         fused_recon = vae.decode(projection(fused_latents, training=False))
@@ -470,7 +719,7 @@ def evaluate(
         if preview is None:
             take = min(num_preview, batch_images.shape[0])
             preview = {
-                "keys": keys[:take],
+                "keys": [cached_split.keys[int(pos)] for pos in batch_positions[:take]],
                 "images": batch_images[:take],
                 "baseline": baseline_recon.numpy()[:take],
                 "fused": fused_recon.numpy()[:take],
@@ -499,6 +748,8 @@ def train(args: argparse.Namespace) -> None:
     if output_dir is None:
         raise ValueError("--output_dir is required")
     output_dir.mkdir(parents=True, exist_ok=True)
+    cache_dir = resolve_path(args.cache_dir) if args.cache_dir else (output_dir / "feature_cache")
+    cache_batch_size = args.cache_batch_size or args.batch_size
 
     dataset = FrameDataset(
         data_root=data_root,
@@ -525,20 +776,68 @@ def train(args: argparse.Namespace) -> None:
     )
     clip_model.to(clip_device)
 
-    sample_images, _ = load_batch_images(dataset, train_indices[: min(args.batch_size, len(train_indices))])
-    sample_vae_latents = extract_vae_latents(vae, sample_images, args.vae_latent_source)
-    sample_clip_features = extract_clip_features(
-        clip_model,
-        clip_processor,
-        sample_images,
-        clip_device,
-        args.clip_feature_source,
-        args.normalize_clip_features,
+    common_cache_metadata = {
+        "data_root": str(data_root),
+        "shard_glob": args.shard_glob,
+        "dataset_size": len(dataset),
+        "max_samples": None if args.max_samples is None else int(args.max_samples),
+        "seed": int(args.seed),
+        "val_split": float(args.val_split),
+        "clip_checkpoint": str(clip_checkpoint.resolve()),
+        "vae_checkpoint": str(vae_checkpoint.resolve()),
+        "clip_feature_source": args.clip_feature_source,
+        "vae_latent_source": args.vae_latent_source,
+        "normalize_clip_features": bool(args.normalize_clip_features),
+    }
+    train_cache = prepare_cached_split(
+        dataset=dataset,
+        indices=train_indices,
+        split_name="train",
+        cache_dir=cache_dir,
+        cache_metadata={
+            **common_cache_metadata,
+            "split_name": "train",
+            "indices_digest": indices_digest(train_indices),
+        },
+        rebuild_cache=args.rebuild_cache,
+        batch_size=cache_batch_size,
+        vae=vae,
+        clip_model=clip_model,
+        clip_processor=clip_processor,
+        clip_device=clip_device,
+        feature_source=args.clip_feature_source,
+        normalize_clip_features=args.normalize_clip_features,
+        latent_source=args.vae_latent_source,
     )
+    val_cache = prepare_cached_split(
+        dataset=dataset,
+        indices=val_indices,
+        split_name="val",
+        cache_dir=cache_dir,
+        cache_metadata={
+            **common_cache_metadata,
+            "split_name": "val",
+            "indices_digest": indices_digest(val_indices),
+        },
+        rebuild_cache=args.rebuild_cache,
+        batch_size=cache_batch_size,
+        vae=vae,
+        clip_model=clip_model,
+        clip_processor=clip_processor,
+        clip_device=clip_device,
+        feature_source=args.clip_feature_source,
+        normalize_clip_features=args.normalize_clip_features,
+        latent_source=args.vae_latent_source,
+    )
+    clip_model.to("cpu")
+    del clip_model
+    del clip_processor
+    if clip_device.type == "cuda":
+        torch.cuda.empty_cache()
 
     cbp = CompactBilinearPooling(
-        input_dim_a=int(sample_vae_latents.shape[-1]),
-        input_dim_b=int(sample_clip_features.shape[-1]),
+        input_dim_a=int(train_cache.vae_latents.shape[-1]),
+        input_dim_b=int(train_cache.clip_features.shape[-1]),
         output_dim=args.fusion_dim,
         seed=args.seed,
         normalize=args.normalize_fused_features,
@@ -558,10 +857,12 @@ def train(args: argparse.Namespace) -> None:
         "clip_checkpoint": str(clip_checkpoint),
         "vae_checkpoint": str(vae_checkpoint),
         "output_dir": str(output_dir),
-        "train_size": int(len(train_indices)),
-        "val_size": int(len(val_indices)),
+        "cache_dir": str(cache_dir),
+        "cache_batch_size": int(cache_batch_size),
+        "train_size": int(train_cache.size),
+        "val_size": int(val_cache.size),
         "z_size": int(model_args.z_size),
-        "clip_feature_dim": int(sample_clip_features.shape[-1]),
+        "clip_feature_dim": int(train_cache.clip_features.shape[-1]),
         "fusion_dim": int(args.fusion_dim),
         "clip_feature_source": args.clip_feature_source,
         "vae_latent_source": args.vae_latent_source,
@@ -572,29 +873,25 @@ def train(args: argparse.Namespace) -> None:
         "learning_rate": float(args.learning_rate),
         "seed": int(args.seed),
         "max_samples": None if args.max_samples is None else int(args.max_samples),
+        "rebuild_cache": bool(args.rebuild_cache),
     }
     (output_dir / "run_config.json").write_text(json.dumps(run_config, indent=2), encoding="utf-8")
     cbp.save(output_dir / "cbp_state.npz")
 
     history_rows: List[dict] = []
     best_val_loss = math.inf
+    best_epoch: Optional[int] = None
+    train_positions = np.arange(train_cache.size)
 
     for epoch in range(args.epochs):
         train_losses = []
 
-        for batch_indices in iter_batches(train_indices, args.batch_size, shuffle=True, seed=args.seed, epoch=epoch):
-            batch_images, _ = load_batch_images(dataset, batch_indices)
+        for batch_positions in iter_batches(train_positions, args.batch_size, shuffle=True, seed=args.seed, epoch=epoch):
+            batch_images = cached_images_to_float(train_cache.images[batch_positions])
             target_images = tf.convert_to_tensor(batch_images, dtype=tf.float32)
-            vae_latents = extract_vae_latents(vae, batch_images, args.vae_latent_source)
-            clip_features = extract_clip_features(
-                clip_model,
-                clip_processor,
-                batch_images,
-                clip_device,
-                args.clip_feature_source,
-                args.normalize_clip_features,
-            )
-            fused_latents = cbp(vae_latents, tf.convert_to_tensor(clip_features, dtype=tf.float32))
+            vae_latents = tf.convert_to_tensor(train_cache.vae_latents[batch_positions], dtype=tf.float32)
+            clip_features = tf.convert_to_tensor(train_cache.clip_features[batch_positions], dtype=tf.float32)
+            fused_latents = cbp(vae_latents, clip_features)
 
             with tf.GradientTape() as tape:
                 projected_z = projection(fused_latents, training=True)
@@ -606,18 +903,11 @@ def train(args: argparse.Namespace) -> None:
             train_losses.append(float(loss.numpy()))
 
         eval_metrics = evaluate(
-            dataset=dataset,
-            indices=val_indices,
+            cached_split=val_cache,
             batch_size=args.batch_size,
             vae=vae,
             projection=projection,
             cbp=cbp,
-            clip_model=clip_model,
-            clip_processor=clip_processor,
-            clip_device=clip_device,
-            feature_source=args.clip_feature_source,
-            normalize_clip_features=args.normalize_clip_features,
-            latent_source=args.vae_latent_source,
             num_preview=args.num_preview,
         )
 
@@ -640,6 +930,7 @@ def train(args: argparse.Namespace) -> None:
         )
 
         preview = eval_metrics["preview"]
+        preview = filter_preview_rows(preview, args.preview_rows)
         if preview is not None and ((epoch + 1) % args.save_preview_every == 0 or epoch == args.epochs - 1):
             make_preview_grid(
                 originals=preview["images"],
@@ -647,12 +938,14 @@ def train(args: argparse.Namespace) -> None:
                 fused_recon=preview["fused"],
                 sample_keys=preview["keys"],
                 output_path=output_dir / f"preview_epoch_{epoch:04d}.png",
+                title=f"Epoch {epoch}",
             )
 
         if row["val_fused_recon_loss"] < best_val_loss:
             best_val_loss = row["val_fused_recon_loss"]
+            best_epoch = epoch
             projection.save_weights(output_dir / "best_projection.weights.h5")
-            preview = eval_metrics["preview"]
+            preview = filter_preview_rows(eval_metrics["preview"], args.preview_rows)
             if preview is not None:
                 make_preview_grid(
                     originals=preview["images"],
@@ -660,10 +953,12 @@ def train(args: argparse.Namespace) -> None:
                     fused_recon=preview["fused"],
                     sample_keys=preview["keys"],
                     output_path=output_dir / "best_preview.png",
+                    title=f"Best epoch {epoch}",
                 )
 
     projection.save_weights(output_dir / "last_projection.weights.h5")
     summary = {
+        "best_epoch": None if best_epoch is None else int(best_epoch),
         "best_val_fused_recon_loss": float(best_val_loss),
         "last_train_recon_loss": history_rows[-1]["train_recon_loss"],
         "last_val_fused_recon_loss": history_rows[-1]["val_fused_recon_loss"],
@@ -688,16 +983,18 @@ def parse_args() -> argparse.Namespace:
         description="Fuse frozen VAE and CLIP latents with compact bilinear pooling and train a linear projection for frame reconstruction."
     )
     parser.add_argument("--config_path", default=str(config_path))
-    parser.add_argument("--data_root", default="outputs", help="Caption shard directory, a specific .tar shard, or an image directory.")
+    parser.add_argument("--data_root", default="webdataset_frames", help="WebDataset shard directory, a specific .tar shard, or an image directory.")
     parser.add_argument("--shard_glob", default=DEFAULT_SHARD_GLOB)
     parser.add_argument("--clip_checkpoint", default=None, help="Path to merged_final or lora_final from CLIP fine-tuning.")
     parser.add_argument("--vae_checkpoint", default=None, help="Optional explicit path to the tf_vae SavedModel directory.")
     parser.add_argument("--output_dir", default="fusion_reconstruction_runs/default")
+    parser.add_argument("--cache_dir", default=None, help="Directory for cached frozen features. Defaults to <output_dir>/feature_cache.")
     parser.add_argument("--env_name", default=config.get("env_name", "CarRacing-v0"))
     parser.add_argument("--exp_name", default=config.get("exp_name", "WorldModels"))
     parser.add_argument("--z_size", type=int, default=int(config.get("z_size", 32)))
     parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--cache_batch_size", type=int, default=None, help="Batch size used while building the frozen-feature cache.")
     parser.add_argument("--learning_rate", type=float, default=1e-3)
     parser.add_argument("--val_split", type=float, default=0.1)
     parser.add_argument("--fusion_dim", type=int, default=4096)
@@ -718,11 +1015,21 @@ def parse_args() -> argparse.Namespace:
         default="mean",
         help="Use the VAE encoder mean or a sampled latent code.",
     )
+    parser.add_argument("--rebuild_cache", action="store_true", help="Ignore any existing cached frozen features and rebuild them.")
     parser.add_argument("--normalize_clip_features", action="store_true")
     parser.add_argument("--normalize_fused_features", action="store_true")
     parser.add_argument("--save_preview_every", type=int, default=1)
-    parser.add_argument("--num_preview", type=int, default=8)
-    return parser.parse_args()
+    parser.add_argument("--num_preview", type=int, default=4)
+    parser.add_argument(
+        "--preview_rows",
+        type=str,
+        default=None,
+        help="Comma-separated 0-based preview row indices to keep in the saved preview image, for example '0,2,3'.",
+    )
+    args = parser.parse_args()
+    if args.preview_rows is not None:
+        args.preview_rows = [int(part.strip()) for part in args.preview_rows.split(",") if part.strip()]
+    return args
 
 
 if __name__ == "__main__":

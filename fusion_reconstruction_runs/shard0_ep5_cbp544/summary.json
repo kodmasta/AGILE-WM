@@ -1,0 +1,7 @@
+{
+  "best_epoch": 4,
+  "best_val_fused_recon_loss": 0.006307366420514882,
+  "last_train_recon_loss": 0.0063134599155906974,
+  "last_val_fused_recon_loss": 0.006307366420514882,
+  "last_val_vae_recon_loss": 0.0030995304114185274
+}

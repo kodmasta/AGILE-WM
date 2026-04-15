@@ -1,0 +1,11 @@
+{
+  "title": "Epoch 0",
+  "columns": [
+    "GT",
+    "VAE-only",
+    "VAE+CLIP"
+  ],
+  "sample_keys": [
+    "episode_000001_frame_000810"
+  ]
+}
