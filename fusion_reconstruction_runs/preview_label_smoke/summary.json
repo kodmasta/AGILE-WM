@@ -1,6 +1,0 @@
-{
-  "best_val_fused_recon_loss": 0.01547117531299591,
-  "last_train_recon_loss": 0.014933563768863678,
-  "last_val_fused_recon_loss": 0.01547117531299591,
-  "last_val_vae_recon_loss": 0.0031533492729067802
-}

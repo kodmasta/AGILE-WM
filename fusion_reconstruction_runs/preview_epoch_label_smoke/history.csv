@@ -1,2 +1,0 @@
-epoch,train_recon_loss,val_fused_recon_loss,val_vae_recon_loss
-0,0.015702195465564728,0.017787721008062363,0.0031533492729067802

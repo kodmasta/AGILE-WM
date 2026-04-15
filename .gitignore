@@ -32,10 +32,6 @@ build/
 *.cache/
 *.pkl
 
-# Model/data outputs
-*.npz
-*.h5
-*.ckpt
 
 # Folders to ignore
 rollouts/
