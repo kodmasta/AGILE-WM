@@ -13,6 +13,7 @@ from gymnasium import spaces
 from gymnasium.utils import seeding
 from PIL import Image
 
+from agile_wm.paths import first_existing, world_model_leaf_candidates
 from vae.vae import CVAE
 from rnn.rnn import MDNRNN, rnn_init_state, rnn_next_state, rnn_sim
 
@@ -45,6 +46,11 @@ def _resize_rgb(frame: np.ndarray, top: int, size: Tuple[int, int] = (64, 64)) -
     cropped = frame[:top, :, :]
     img = Image.fromarray(cropped, mode="RGB").resize(size)
     return np.asarray(img, dtype=np.uint8)
+
+
+def _resolve_model_dir(args: Any, leaf: str) -> Path:
+    candidates = world_model_leaf_candidates(args.exp_name, args.env_name, leaf)
+    return first_existing(candidates) or candidates[0]
 
 
 class CarRacingWrapper(gym.Env):
@@ -118,18 +124,8 @@ class CarRacingMDNRNN(CarRacingWrapper):
         self.rnn = MDNRNN(args)
 
         if load_model:
-            base = f"results/{args.exp_name}/{args.env_name}"
-            if not os.path.exists(base):
-                if args.env_name.startswith("CarRacing"):
-                    fallback = f"results/{args.exp_name}/CarRacing"
-                elif args.env_name.startswith("DoomTakeCover"):
-                    fallback = f"results/{args.exp_name}/DoomTakeCover"
-                else:
-                    fallback = base
-                if os.path.exists(fallback):
-                    base = fallback
-            _load_saved_model_weights(self.vae, f"{base}/tf_vae")
-            _load_saved_model_weights(self.rnn, f"{base}/tf_rnn")
+            _load_saved_model_weights(self.vae, str(_resolve_model_dir(args, "tf_vae")))
+            _load_saved_model_weights(self.rnn, str(_resolve_model_dir(args, "tf_rnn")))
 
         self.rnn_states = rnn_init_state(self.rnn)
 
@@ -227,9 +223,8 @@ class DoomTakeCoverMDNRNN(gym.Env):
         self.rnn = MDNRNN(args)
 
         if load_model:
-            base = f"results/{args.exp_name}/{args.env_name}"
-            _load_saved_model_weights(self.vae, f"{base}/tf_vae")
-            _load_saved_model_weights(self.rnn, f"{base}/tf_rnn")
+            _load_saved_model_weights(self.vae, str(_resolve_model_dir(args, "tf_vae")))
+            _load_saved_model_weights(self.rnn, str(_resolve_model_dir(args, "tf_rnn")))
 
         self.action_space = spaces.Box(
             low=-1.0,
@@ -363,7 +358,8 @@ class DreamDoomTakeCoverMDNRNN(gym.Env):
         super().__init__()
         self.args = args
 
-        model_path = f"results/{args.exp_name}/{args.env_name}"
+        initial_z_dir = _resolve_model_dir(args, "tf_initial_z")
+        model_path = initial_z_dir.parent
         with open(os.path.join(model_path, "tf_initial_z/initial_z.json"), "r") as f:
             initial_mu, initial_logvar = json.load(f)
 
@@ -376,8 +372,8 @@ class DreamDoomTakeCoverMDNRNN(gym.Env):
         self.rnn = MDNRNN(args)
 
         if load_model:
-            _load_saved_model_weights(self.vae, f"{model_path}/tf_vae")
-            _load_saved_model_weights(self.rnn, f"{model_path}/tf_rnn")
+            _load_saved_model_weights(self.vae, str(model_path / "tf_vae"))
+            _load_saved_model_weights(self.rnn, str(model_path / "tf_rnn"))
 
         self.action_space = spaces.Box(
             low=-1.0,

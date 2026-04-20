@@ -8,6 +8,9 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
+from agile_wm.paths import default_frame_shards_dir, default_rollouts_dir
+from agile_wm.runtime import resolve_repo_path
+
 
 def parse_episode_index(rollout_file: Path) -> int:
     stem = rollout_file.stem
@@ -261,7 +264,7 @@ def main():
     parser.add_argument(
         "--rollouts_dir",
         type=str,
-        default="rollouts",
+        default=str(default_rollouts_dir()),
         help="Directory containing rollout .npz files",
     )
     parser.add_argument(
@@ -279,7 +282,7 @@ def main():
     parser.add_argument(
         "--output_dir",
         type=str,
-        default="webdataset_frames",
+        default=str(default_frame_shards_dir()),
         help="Directory where WebDataset shards and manifests will be written",
     )
     parser.add_argument(
@@ -314,8 +317,8 @@ def main():
 
     args = parser.parse_args()
     build_webdataset(
-        rollouts_dir=Path(args.rollouts_dir),
-        output_dir=Path(args.output_dir),
+        rollouts_dir=resolve_repo_path(args.rollouts_dir),
+        output_dir=resolve_repo_path(args.output_dir),
         num_frames=args.num_frames,
         min_frame_index=args.min_frame_index,
         seed=args.seed,

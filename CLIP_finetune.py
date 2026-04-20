@@ -19,6 +19,14 @@ from torch.utils.data import DataLoader, Dataset, random_split
 from torch.utils.tensorboard import SummaryWriter
 from PIL import Image
 
+from agile_wm.paths import (
+    caption_pair_dir_candidates,
+    default_caption_pairs_dir,
+    default_clip_finetune_dir,
+    default_hf_cache_dir as canonical_hf_cache_dir,
+)
+from agile_wm.runtime import ensure_supported_cuda_device as ensure_runtime_cuda_device, resolve_repo_path
+
 try:
     from transformers import CLIPModel, CLIPProcessor
 except ImportError:
@@ -40,48 +48,29 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-SCRIPT_DIR = Path(__file__).resolve().parent
 LATEST_CHECKPOINT_POINTER = "checkpoint_latest.txt"
-DEFAULT_CLUSTER_DATASET = Path("/network/scratch/h/hengh/my_dataset")
 DEFAULT_SHARD_GLOB = "shard-*-caption-*.tar"
 
 
 def resolve_path(path_like: Optional[str]) -> Optional[Path]:
-    if path_like is None:
-        return None
-    path = Path(path_like).expanduser()
-    if path.is_absolute():
-        return path
-    return (SCRIPT_DIR / path).resolve()
-
-
-def cluster_scratch_root() -> Path:
-    scratch = os.environ.get("SCRATCH")
-    if scratch:
-        return Path(scratch).expanduser()
-    return DEFAULT_CLUSTER_DATASET.parent
+    return resolve_repo_path(path_like)
 
 
 def default_data_root() -> Path:
-    candidates = [
-        (cluster_scratch_root() / "my_dataset" / "frame-caption-pairs-temp").resolve(),
-        (cluster_scratch_root() / "my_dataset" / "outputs").resolve(),
-        (cluster_scratch_root() / "my_dataset").resolve(),
-        (SCRIPT_DIR / "outputs").resolve(),
-    ]
+    candidates = caption_pair_dir_candidates(include_temp=True)
     for candidate in candidates:
         resolved = resolve_data_root(candidate, DEFAULT_SHARD_GLOB)
         if directory_has_shards(resolved, DEFAULT_SHARD_GLOB):
             return resolved
-    return candidates[0]
+    return default_caption_pairs_dir(temp=True)
 
 
 def default_output_dir() -> Path:
-    return (cluster_scratch_root() / "AGILE-WM" / "clip_finetune").resolve()
+    return default_clip_finetune_dir()
 
 
 def default_hf_cache_dir() -> Optional[Path]:
-    return (cluster_scratch_root() / "hf_cache").resolve()
+    return canonical_hf_cache_dir()
 
 
 def resolve_model_source(model_name_or_path: str):
@@ -110,20 +99,13 @@ def load_clip_components(model_name_or_path: str, cache_dir: Optional[Path], loc
 
 
 def ensure_supported_cuda_device(device: torch.device):
-    if device.type != "cuda":
-        return
-
-    device_cc = torch.cuda.get_device_capability(device)
-    device_arch = f"sm_{device_cc[0]}{device_cc[1]}"
-    supported_arches = set(torch.cuda.get_arch_list())
-
-    if supported_arches and device_arch not in supported_arches:
-        supported = ", ".join(sorted(supported_arches))
+    try:
+        ensure_runtime_cuda_device(device)
+    except RuntimeError as exc:
         raise RuntimeError(
-            "Installed PyTorch build is not compatible with the active GPU. "
-            f"Found {torch.cuda.get_device_name(device)} ({device_arch}), but this build only supports: {supported}. "
-            "Use Python 3.10 with torch==2.6.0, torchvision==0.21.0, and torchaudio==2.6.0 from the PyTorch CUDA 12.4 index."
-        )
+            f"{exc} Use Python 3.10 with torch==2.6.0, torchvision==0.21.0, "
+            "and torchaudio==2.6.0 from the PyTorch CUDA 12.4 index."
+        ) from exc
 
 
 def directory_has_shards(data_root: Path, shard_glob: str) -> bool:
@@ -134,23 +116,12 @@ def resolve_data_root(data_root: Path, shard_glob: str) -> Path:
     if directory_has_shards(data_root, shard_glob):
         return data_root
 
-    nested_outputs = data_root / "outputs"
-    if directory_has_shards(nested_outputs, shard_glob):
-        return nested_outputs
-
     return data_root
 
 
 def discover_shard_directories(primary_root: Path, shard_glob: str) -> List[Path]:
-    candidates = [
-        primary_root,
-        primary_root / "outputs",
-        primary_root.parent if primary_root.parent != primary_root else None,
-        SCRIPT_DIR / "outputs",
-        (cluster_scratch_root() / "my_dataset" / "frame-caption-pairs-temp").resolve(),
-        (cluster_scratch_root() / "my_dataset" / "outputs").resolve(),
-        (cluster_scratch_root() / "my_dataset").resolve(),
-    ]
+    candidates = [primary_root, primary_root.parent if primary_root.parent != primary_root else None]
+    candidates.extend(caption_pair_dir_candidates(include_temp=True))
 
     seen = set()
     matches = []
@@ -668,7 +639,7 @@ def parse_args():
 
     # Data  (tar shard format)
     p.add_argument("--data_root",   default=None,
-                   help="Folder containing caption shard .tar files. Defaults to the first available shard directory among Mila scratch frame-caption-pairs, Mila scratch outputs, a nested outputs/ folder, or this repo's outputs/.")
+                   help="Folder containing caption shard .tar files. Defaults to AGILE_WM_ARTIFACTS_ROOT/datasets/frame_caption_pairs_temp, then frame_caption_pairs.")
     p.add_argument("--shard_glob",  default=DEFAULT_SHARD_GLOB,
                    help="Glob to find shards, e.g. 'shard_*.tar'")
     p.add_argument("--caption_key", default="caption",
@@ -710,7 +681,7 @@ def parse_args():
 
     # Checkpointing
     p.add_argument("--output_dir", default=None,
-                   help="Directory for checkpoints and exports. Defaults to $SCRATCH/AGILE-WM/clip_finetune.")
+                   help="Directory for checkpoints and exports. Defaults to artifacts/models/clip_finetune or AGILE_WM_ARTIFACTS_ROOT/models/clip_finetune.")
     p.add_argument("--resume",     action="store_true",
                    help="Resume training from checkpoint_latest/")
     p.add_argument("--save_every", type=int, default=1)

@@ -5,6 +5,8 @@ import re
 
 import numpy as np
 
+from agile_wm.paths import default_controller_checkpoint_path, default_rollouts_dir
+from agile_wm.runtime import resolve_repo_path
 from controller import Controller, MODE_ZCH
 from env import make_env
 
@@ -74,7 +76,7 @@ def parse_args():
     parser.add_argument(
         "--controller_path",
         type=str,
-        default="results/WorldModels/CarRacing/log/CarRacing-v0.cma.16.64.best.json",
+        default=None,
         help="Path to the controller JSON file from og.",
     )
     parser.add_argument("--num_episodes", type=int, default=500)
@@ -85,7 +87,7 @@ def parse_args():
         default=None,
         help="Optional base RNG seed. If omitted, each run will sample fresh rollout seeds.",
     )
-    parser.add_argument("--out_dir", type=str, default="rollouts")
+    parser.add_argument("--out_dir", type=str, default=str(default_rollouts_dir()))
     parser.add_argument(
         "--render_mode",
         type=str,
@@ -129,7 +131,10 @@ def parse_args():
         default=float(config.get("rnn_temperature", 1.0)),
         help="Temperature used by the MDN-RNN sampling routine.",
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.controller_path is None:
+        args.controller_path = str(default_controller_checkpoint_path(args.exp_name, args.env_name))
+    return args
 
 
 def build_model_args(args: argparse.Namespace) -> SimpleNamespace:
@@ -164,7 +169,7 @@ def collect_rollouts(args: argparse.Namespace) -> None:
     model_args = build_model_args(args)
 
     controller = Controller(model_args)
-    controller_path = Path(args.controller_path)
+    controller_path = resolve_repo_path(args.controller_path)
     if not controller_path.exists():
         raise FileNotFoundError(f"Controller file not found: {controller_path}")
     controller.load_model(str(controller_path))
@@ -177,7 +182,7 @@ def collect_rollouts(args: argparse.Namespace) -> None:
         with_obs=args.with_obs,
     )
 
-    out_dir = Path(args.out_dir)
+    out_dir = resolve_repo_path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     if args.seed is None:

@@ -41,8 +41,8 @@ AGILE-WM covers the full data and modeling loop for language-aware world model e
 - `series.py` encodes rollout files into cached VAE, CLIP, and fused latent trajectories aligned with actions for recurrent modeling.
 - `rnn_train.py` trains the MDN-RNN directly on cached fused latent sequences.
 - `predict_rnn_next_frame.py` reconstructs the current fused state and the RNN-predicted next fused state into side-by-side preview sheets.
-- `run_caption_array.sh` and `run_clip_finetune.sh` provide cluster-oriented entry points for large-scale captioning and training.
-- `sample_random_caption_pairs.ipynb`, `plot_reconstruction_losses.ipynb`, and related notebooks help inspect shard contents, caption quality, and reconstruction behavior.
+- `scripts/slurm/run_caption_array.sh` and `scripts/slurm/run_clip_finetune.sh` provide cluster-oriented entry points for large-scale captioning and training.
+- `notebooks/sample_random_caption_pairs.ipynb`, `notebooks/plot_reconstruction_losses.ipynb`, and related notebooks help inspect shard contents, caption quality, and reconstruction behavior.
 
 ## Why AGILE-WM
 
@@ -117,16 +117,16 @@ uv run --python 3.10 python extract_frames.py
 
 ```bash
 uv run --python 3.10 python caption_shard.py \
-  --shard_path webdataset_frames/shard-00000.tar \
-  --output_dir outputs \
-  --model_dir qwen3-vl-8b-instruct
+  --shard_path artifacts/datasets/webdataset_frames/shard-00000.tar \
+  --output_dir artifacts/datasets/frame_caption_pairs \
+  --model_dir artifacts/models/qwen3-vl-8b-instruct
 ```
 
 ### 4. Fine-tune CLIP on captioned shards
 
 ```bash
 uv run --python 3.10 python CLIP_finetune.py \
-  --data_root outputs
+  --data_root artifacts/datasets/frame_caption_pairs
 ```
 
 ### 5. Reconstruct frames from fused `z_t`
@@ -136,9 +136,9 @@ This experiment is separate from rollout collection. It loads a frozen VAE and a
 ```bash
 uv run --python 3.10 python fusion_reconstruction_experiment.py \
   --config_path configs/carracing.config \
-  --data_root webdataset_frames \
-  --clip_checkpoint path/to/merged_final \
-  --output_dir fusion_reconstruction_runs/carracing_cbp
+  --data_root artifacts/datasets/webdataset_frames \
+  --clip_checkpoint artifacts/models/clip_finetune/merged_final \
+  --output_dir artifacts/experiments/fusion_reconstruction/carracing_cbp
 ```
 
 The script now precomputes and caches the frozen VAE latents and CLIP image embeddings once under `output_dir/feature_cache` by default, then trains the projection from those cached arrays. It writes training curves, saved projection weights, the cache metadata, and preview grids that compare the original frame, the frozen VAE reconstruction baseline, and the reconstruction produced from the fused latent.
@@ -150,22 +150,22 @@ This stage re-encodes saved rollout frames with the frozen VAE and fine-tuned CL
 ```bash
 uv run --python 3.10 python series.py \
   --config_path configs/carracing.config \
-  --rollout_dir rollouts \
-  --clip_checkpoint clip_finetune/merged_final \
-  --reconstruction_dir fusion_reconstruction_runs/carracing_cbp
+  --rollout_dir artifacts/datasets/rollouts \
+  --clip_checkpoint artifacts/models/clip_finetune/merged_final \
+  --reconstruction_dir artifacts/experiments/fusion_reconstruction/carracing_cbp
 ```
 
-By default this produces a cache under `results/<exp>/<env>/series`. That cache keeps the fused representation consistent with the `z_t` reconstruction run by reusing the saved `cbp_state.npz`.
+By default this produces a cache under `artifacts/world_models/<exp>/<env>/series`. That cache keeps the fused representation consistent with the `z_t` reconstruction run by reusing the saved `cbp_state.npz`.
 
 ### 7. Train the MDN-RNN on fused latent sequences
 
 ```bash
 uv run --python 3.10 python rnn_train.py \
   --config_path configs/carracing.config \
-  --series_dir results/WorldModels/CarRacing-v0/series
+  --series_dir artifacts/world_models/WorldModels/CarRacing-v0/series
 ```
 
-The recurrent model is trained directly on the cached fused latent sequences plus actions. It writes the exported TensorFlow model under `results/<exp>/<env>/tf_rnn` and also saves training checkpoints for downstream visualization.
+The recurrent model is trained directly on the cached fused latent sequences plus actions. It writes the exported TensorFlow model under `artifacts/world_models/<exp>/<env>/tf_rnn` and also saves training checkpoints for downstream visualization.
 
 ### 8. Reconstruct predicted `z_{t+1}` frames
 
@@ -174,15 +174,15 @@ This experiment uses the saved RNN, the compact bilinear pooling state, and the 
 ```bash
 uv run --python 3.10 python predict_rnn_next_frame.py \
   --config_path configs/carracing.config \
-  --series_dir results/WorldModels/CarRacing-v0/series \
-  --rnn_dir results/WorldModels/CarRacing-v0/tf_rnn \
-  --reconstruction_dir fusion_reconstruction_runs/carracing_cbp \
+  --series_dir artifacts/world_models/WorldModels/CarRacing-v0/series \
+  --rnn_dir artifacts/world_models/WorldModels/CarRacing-v0/tf_rnn \
+  --reconstruction_dir artifacts/experiments/fusion_reconstruction/carracing_cbp \
   --rollout_index 0 \
   --frame_index 0 \
   --num_frames 8
 ```
 
-The output is saved under `results/<exp>/<env>/rnn_prediction_preview` by default, together with a JSON sidecar that records the source rollout, frame indices, selected projection weights, and action sequence used for the preview.
+The output is saved under `artifacts/world_models/<exp>/<env>/rnn_prediction_preview` by default, together with a JSON sidecar that records the source rollout, frame indices, selected projection weights, and action sequence used for the preview.
 
 ## Reconstruction Experiments
 
@@ -209,24 +209,40 @@ The next-step prediction visuals are especially useful because they probe more t
 
 The repository includes Slurm scripts for large-scale runs on Mila-style cluster setups:
 
-- `run_caption_array.sh` stages shards locally and captions them with Qwen3-VL.
-- `run_clip_finetune.sh` fine-tunes CLIP on captioned WebDataset shards.
+- `scripts/slurm/run_caption_array.sh` stages shards locally and captions them with Qwen3-VL.
+- `scripts/slurm/run_clip_finetune.sh` fine-tunes CLIP on captioned WebDataset shards.
 
-These scripts assume scratch storage for model caches and outputs, and they are set up to rebuild the locked `uv` environment on the cluster before launching jobs.
+These scripts treat `AGILE_WM_ARTIFACTS_ROOT` as the canonical runtime root for datasets, model weights, caches, and outputs. On a cluster, point it at scratch before submitting jobs if you want the whole runtime tree to live there:
+
+```bash
+export AGILE_WM_ARTIFACTS_ROOT="$SCRATCH/AGILE-WM/artifacts"
+```
+
+Use the submission wrapper if you want Slurm stdout/stderr logs to land under the same artifact root as well:
+
+```bash
+scripts/submit_slurm.sh scripts/slurm/run_clip_finetune.sh
+scripts/submit_slurm.sh scripts/slurm/run_caption_array.sh
+scripts/submit_slurm.sh scripts/slurm/run_rnn_train_mila.sh
+```
+
+If `AGILE_WM_ARTIFACTS_ROOT` is unset, the wrapper defaults it to `$SCRATCH/AGILE-WM/artifacts` when `SCRATCH` is available, otherwise it falls back to the repo-local `artifacts/` tree.
 
 ## Repository Layout
 
 ```text
-configs/             environment and experiment configuration files
-rollouts/            collected rollout episodes
-webdataset_frames/   frame-only WebDataset shards
-outputs/             captioned image-text shards and summaries
-clip_finetune/       saved LoRA adapters and merged CLIP checkpoints
-fusion_reconstruction_runs/ saved reconstruction runs, projections, caches, and preview grids
-results/             controller and training outputs
-vae/                 VAE implementation
-rnn/                 MDN-RNN implementation
-logs/                cluster job logs
+configs/                          environment and experiment configuration files
+artifacts/datasets/               rollouts, frame shards, and caption-pair datasets
+artifacts/models/                 local model weights such as Qwen3-VL and CLIP checkpoints
+artifacts/world_models/           saved World Models checkpoints, logs, previews, and cached series
+artifacts/experiments/            reconstruction runs and other experiment outputs
+artifacts/visualizations/         rendered videos and similar media outputs
+artifacts/cache/                  Hugging Face caches and disposable virtualenvs
+notebooks/                        exploratory analysis and inspection notebooks
+docs/figures/                     tracked static figures kept out of the repo root
+scripts/slurm/                    cluster entrypoints and shared Slurm helpers
+vae/                              VAE implementation
+rnn/                              MDN-RNN implementation
 ```
 
 ## Acknowledgments

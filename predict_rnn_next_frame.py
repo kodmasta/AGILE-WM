@@ -15,6 +15,7 @@ import tensorflow as tf
 import torch
 from PIL import Image, ImageDraw, ImageFont
 
+from agile_wm.paths import DEFAULT_RECONSTRUCTION_RUN, default_reconstruction_dir, default_world_model_leaf, first_existing, world_model_leaf_candidates
 from fusion_reconstruction_experiment import (
     _load_saved_model_weights,
     build_model_args,
@@ -33,22 +34,6 @@ from series import load_cbp, load_rollout
 from vae.vae import CVAE
 
 
-SCRIPT_DIR = Path(__file__).resolve().parent
-
-
-def default_results_dir(exp_name: str, env_name: str, leaf: str) -> Path:
-    return SCRIPT_DIR / "results" / exp_name / env_name / leaf
-
-
-def fallback_results_dir(exp_name: str, env_name: str, leaf: str) -> Path:
-    if "-" in env_name:
-        base_env = env_name.split("-", 1)[0]
-        candidate = SCRIPT_DIR / "results" / exp_name / base_env / leaf
-        if candidate.exists():
-            return candidate
-    return default_results_dir(exp_name, env_name, leaf)
-
-
 def resolve_existing_dir(path_like: str | None, exp_name: str, env_name: str, leaf: str) -> Path:
     explicit = resolve_path(path_like)
     if explicit is not None:
@@ -56,16 +41,12 @@ def resolve_existing_dir(path_like: str | None, exp_name: str, env_name: str, le
             raise FileNotFoundError(f"Required directory not found: {explicit}")
         return explicit
 
-    candidate = default_results_dir(exp_name, env_name, leaf)
-    if candidate.exists():
-        return candidate
-
-    fallback = fallback_results_dir(exp_name, env_name, leaf)
-    if fallback.exists():
+    fallback = first_existing(world_model_leaf_candidates(exp_name, env_name, leaf))
+    if fallback is not None:
         return fallback
 
     raise FileNotFoundError(
-        f"Could not find {leaf} under results/{exp_name}/{env_name} or its version-stripped fallback."
+        f"Could not find {leaf} under artifacts/world_models/{exp_name}/{env_name} or its version-stripped fallback."
     )
 
 
@@ -294,7 +275,7 @@ def choose_output_path(args: argparse.Namespace, exp_name: str, env_name: str) -
     if explicit is not None:
         return explicit
     end_frame_index = args.frame_index + args.num_frames - 1
-    return SCRIPT_DIR / "results" / exp_name / env_name / "rnn_prediction_preview" / (
+    return default_world_model_leaf(exp_name, env_name, "rnn_prediction_preview") / (
         f"rollout_{args.rollout_index:04d}_frames_{args.frame_index:04d}_{end_frame_index:04d}.png"
     )
 
@@ -440,9 +421,9 @@ def parse_args() -> argparse.Namespace:
         description="Render GT, fused-latent reconstruction, and RNN-predicted reconstruction from saved models."
     )
     parser.add_argument("--config_path", default=str(config_path))
-    parser.add_argument("--series_dir", default=None, help="Defaults to results/<exp>/<env>/series")
-    parser.add_argument("--rnn_dir", default=None, help="Defaults to results/<exp>/<env>/tf_rnn")
-    parser.add_argument("--reconstruction_dir", default="fusion_reconstruction_runs/shard0_ep5_cbp544")
+    parser.add_argument("--series_dir", default=None, help="Defaults to artifacts/world_models/<exp>/<env>/series")
+    parser.add_argument("--rnn_dir", default=None, help="Defaults to artifacts/world_models/<exp>/<env>/tf_rnn")
+    parser.add_argument("--reconstruction_dir", default=str(default_reconstruction_dir(DEFAULT_RECONSTRUCTION_RUN)))
     parser.add_argument("--vae_checkpoint", default=None)
     parser.add_argument("--clip_checkpoint", default=None)
     parser.add_argument("--env_name", default=config.get("env_name", "CarRacing-v0"))

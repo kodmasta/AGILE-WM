@@ -2,7 +2,7 @@
 Precompute frozen VAE and CLIP features for rollout frames.
 
 This replaces the old record-to-series pipeline. It reads rollout files from
-rollouts/episode_*.npz, encodes every frame with the trained VAE and CLIP
+artifacts/datasets/rollouts/episode_*.npz, encodes every frame with the trained VAE and CLIP
 models, and stores per-rollout feature arrays that rnn_train.py can reshape
 into fixed chunk-size sequences.
 """
@@ -17,6 +17,12 @@ import numpy as np
 import tensorflow as tf
 import torch
 
+from agile_wm.paths import (
+    DEFAULT_RECONSTRUCTION_RUN,
+    default_reconstruction_dir,
+    default_rollouts_dir,
+    default_world_model_leaf,
+)
 from fusion_reconstruction_experiment import (
     CompactBilinearPooling,
     _load_saved_model_weights,
@@ -46,7 +52,7 @@ DEFAULT_ROLLOUT_GLOB = "episode_*.npz"
 
 
 def default_output_dir(exp_name: str, env_name: str) -> Path:
-    return SCRIPT_DIR / "results" / exp_name / env_name / "series"
+    return default_world_model_leaf(exp_name, env_name, "series")
 
 
 def list_rollout_files(rollout_dir: Path, rollout_glob: str, num_rollouts: int) -> List[Path]:
@@ -400,14 +406,14 @@ def parse_args() -> argparse.Namespace:
         description="Encode rollout frames with frozen VAE and CLIP models and cache the features for RNN training."
     )
     parser.add_argument("--config_path", default=str(config_path))
-    parser.add_argument("--rollout_dir", default="rollouts")
+    parser.add_argument("--rollout_dir", default=str(default_rollouts_dir()))
     parser.add_argument("--rollout_glob", default=DEFAULT_ROLLOUT_GLOB)
-    parser.add_argument("--output_dir", default=None, help="Defaults to results/<exp>/<env>/series")
+    parser.add_argument("--output_dir", default=None, help="Defaults to artifacts/world_models/<exp>/<env>/series")
     parser.add_argument("--clip_checkpoint", default=None, help="Path to merged_final or lora_final from CLIP fine-tuning.")
     parser.add_argument("--vae_checkpoint", default=None, help="Optional explicit path to the tf_vae SavedModel directory.")
     parser.add_argument(
         "--reconstruction_dir",
-        default="fusion_reconstruction_runs/shard0_ep5_cbp544",
+        default=str(default_reconstruction_dir(DEFAULT_RECONSTRUCTION_RUN)),
         help="Directory containing cbp_state.npz from the reconstruction run that defines the fused representation.",
     )
     parser.add_argument("--env_name", default=config.get("env_name", "CarRacing-v0"))

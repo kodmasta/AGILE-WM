@@ -3,6 +3,13 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Python tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
 # Virtual environment
 .venv/
 env/
@@ -25,17 +32,27 @@ venv.bak/
 dist/
 build/
 
-# Results, logs, and cache
+# Logs and temp files
+*.err
 *.log
 *.out
 *.tmp
 *.cache/
 *.pkl
 
+# Generated datasets, checkpoints, and experiment outputs
+artifacts/cache/
+artifacts/datasets/
+artifacts/experiments/
+artifacts/models/
+artifacts/visualizations/
+artifacts/world_models/
+artifacts/logs/*
+!artifacts/README.md
+!artifacts/logs/.gitkeep
 
-# Folders to ignore
-rollouts/
-rollout_videos/
-webdataset_frames/
-qwen3-vl-8b-instruct/
-
+# Local scratch and scheduler leftovers
+.venvs/
+hf_cache/
+hf_home/
+slurm-*.out

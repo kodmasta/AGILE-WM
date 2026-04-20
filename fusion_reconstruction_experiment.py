@@ -21,6 +21,13 @@ try:
 except ImportError:
     PeftModel = None
 
+from agile_wm.paths import (
+    clip_checkpoint_candidates,
+    default_frame_shards_dir,
+    default_fusion_reconstruction_dir,
+    world_model_leaf_candidates,
+)
+from agile_wm.runtime import ensure_supported_cuda_device, resolve_repo_path
 from vae.vae import CVAE
 
 
@@ -52,12 +59,7 @@ def load_config(path: Path) -> dict:
 
 
 def resolve_path(path_like: Optional[str]) -> Optional[Path]:
-    if path_like is None:
-        return None
-    path = Path(path_like).expanduser()
-    if path.is_absolute():
-        return path
-    return (SCRIPT_DIR / path).resolve()
+    return resolve_repo_path(path_like)
 
 
 def configure_tensorflow_memory_growth() -> None:
@@ -66,22 +68,6 @@ def configure_tensorflow_memory_growth() -> None:
             tf.config.experimental.set_memory_growth(gpu, True)
     except Exception as exc:
         log.warning("Could not enable TensorFlow memory growth: %s", exc)
-
-
-def ensure_supported_cuda_device(device: torch.device) -> None:
-    if device.type != "cuda":
-        return
-
-    device_cc = torch.cuda.get_device_capability(device)
-    device_arch = f"sm_{device_cc[0]}{device_cc[1]}"
-    supported_arches = set(torch.cuda.get_arch_list())
-
-    if supported_arches and device_arch not in supported_arches:
-        supported = ", ".join(sorted(supported_arches))
-        raise RuntimeError(
-            "Installed PyTorch build is not compatible with the active GPU. "
-            f"Found {torch.cuda.get_device_name(device)} ({device_arch}), but this build only supports: {supported}."
-        )
 
 
 def _load_saved_model_weights(model: tf.keras.Model, path: Path) -> None:
@@ -251,57 +237,22 @@ def find_vae_checkpoint_dir(model_args: SimpleNamespace, explicit_path: Optional
             raise FileNotFoundError(f"VAE checkpoint not found: {explicit_path}")
         return explicit_path
 
-    base = SCRIPT_DIR / "results" / model_args.exp_name / model_args.env_name / "tf_vae"
-    if base.exists():
-        return base
-
-    if model_args.env_name.startswith("CarRacing"):
-        fallback = SCRIPT_DIR / "results" / model_args.exp_name / "CarRacing" / "tf_vae"
-        if fallback.exists():
-            return fallback
-    if model_args.env_name.startswith("DoomTakeCover"):
-        fallback = SCRIPT_DIR / "results" / model_args.exp_name / "DoomTakeCover" / "tf_vae"
-        if fallback.exists():
-            return fallback
+    for candidate in world_model_leaf_candidates(model_args.exp_name, model_args.env_name, "tf_vae"):
+        if candidate.exists():
+            return candidate
 
     raise FileNotFoundError(
-        f"Could not find VAE weights under results/{model_args.exp_name}/{model_args.env_name}/tf_vae"
+        f"Could not find VAE weights for {model_args.exp_name}/{model_args.env_name}"
     )
 
 
 def default_clip_checkpoint_candidates() -> List[Path]:
-    return [
-        SCRIPT_DIR / "clip_finetune" / "merged_final",
-        SCRIPT_DIR / "clip_finetune" / "lora_final",
-        Path.home() / "clip_finetune" / "merged_final",
-        Path.home() / "clip_finetune" / "lora_final",
-        SCRIPT_DIR / "merged_final",
-        SCRIPT_DIR / "lora_final",
-    ]
-
-
-def fallback_home_clip_checkpoint(explicit_path: Path) -> Optional[Path]:
-    try:
-        relative_to_repo = explicit_path.relative_to(SCRIPT_DIR)
-    except ValueError:
-        return None
-
-    parts = relative_to_repo.parts
-    if not parts or parts[0] != "clip_finetune":
-        return None
-
-    home_candidate = Path.home() / relative_to_repo
-    if home_candidate.exists():
-        return home_candidate
-    return None
+    return clip_checkpoint_candidates()
 
 
 def resolve_clip_checkpoint_dir(explicit_path: Optional[Path]) -> Path:
     if explicit_path is not None:
         if not explicit_path.exists():
-            home_fallback = fallback_home_clip_checkpoint(explicit_path)
-            if home_fallback is not None:
-                return home_fallback
             raise FileNotFoundError(f"CLIP checkpoint not found: {explicit_path}")
         return explicit_path
 
@@ -983,11 +934,11 @@ def parse_args() -> argparse.Namespace:
         description="Fuse frozen VAE and CLIP latents with compact bilinear pooling and train a linear projection for frame reconstruction."
     )
     parser.add_argument("--config_path", default=str(config_path))
-    parser.add_argument("--data_root", default="webdataset_frames", help="WebDataset shard directory, a specific .tar shard, or an image directory.")
+    parser.add_argument("--data_root", default=str(default_frame_shards_dir()), help="WebDataset shard directory, a specific .tar shard, or an image directory.")
     parser.add_argument("--shard_glob", default=DEFAULT_SHARD_GLOB)
     parser.add_argument("--clip_checkpoint", default=None, help="Path to merged_final or lora_final from CLIP fine-tuning.")
     parser.add_argument("--vae_checkpoint", default=None, help="Optional explicit path to the tf_vae SavedModel directory.")
-    parser.add_argument("--output_dir", default="fusion_reconstruction_runs/default")
+    parser.add_argument("--output_dir", default=str(default_fusion_reconstruction_dir("default")))
     parser.add_argument("--cache_dir", default=None, help="Directory for cached frozen features. Defaults to <output_dir>/feature_cache.")
     parser.add_argument("--env_name", default=config.get("env_name", "CarRacing-v0"))
     parser.add_argument("--exp_name", default=config.get("exp_name", "WorldModels"))

@@ -18,6 +18,8 @@ from typing import Dict, Optional, Tuple
 import numpy as np
 import tensorflow as tf
 
+from agile_wm.paths import default_world_model_leaf
+from agile_wm.runtime import resolve_repo_path
 from rnn.rnn import MDNRNN
 
 
@@ -47,12 +49,7 @@ def load_config(path: Path) -> dict:
 
 
 def resolve_path(path_like: Optional[str]) -> Optional[Path]:
-    if path_like is None:
-        return None
-    path = Path(path_like).expanduser()
-    if path.is_absolute():
-        return path
-    return (SCRIPT_DIR / path).resolve()
+    return resolve_repo_path(path_like)
 
 
 def configure_tensorflow_memory_growth() -> None:
@@ -105,15 +102,15 @@ class FeatureStore:
 
 
 def default_series_dir(exp_name: str, env_name: str) -> Path:
-    return SCRIPT_DIR / "results" / exp_name / env_name / "series"
+    return default_world_model_leaf(exp_name, env_name, "series")
 
 
 def default_model_dir(exp_name: str, env_name: str) -> Path:
-    return SCRIPT_DIR / "results" / exp_name / env_name / "tf_rnn"
+    return default_world_model_leaf(exp_name, env_name, "tf_rnn")
 
 
 def default_initial_z_dir(exp_name: str, env_name: str) -> Path:
-    return SCRIPT_DIR / "results" / exp_name / env_name / "tf_initial_z"
+    return default_world_model_leaf(exp_name, env_name, "tf_initial_z")
 
 
 def load_feature_store(series_dir: Path) -> FeatureStore:
@@ -509,9 +506,9 @@ def parse_args() -> argparse.Namespace:
         description="Train the MDN-RNN on chunked CBP-fused rollout features."
     )
     parser.add_argument("--config_path", default=str(config_path))
-    parser.add_argument("--series_dir", default=None, help="Defaults to results/<exp>/<env>/series")
-    parser.add_argument("--output_dir", default=None, help="Defaults to results/<exp>/<env>/tf_rnn")
-    parser.add_argument("--initial_z_dir", default=None, help="Defaults to results/<exp>/<env>/tf_initial_z")
+    parser.add_argument("--series_dir", default=None, help="Defaults to artifacts/world_models/<exp>/<env>/series")
+    parser.add_argument("--output_dir", default=None, help="Defaults to artifacts/world_models/<exp>/<env>/tf_rnn")
+    parser.add_argument("--initial_z_dir", default=None, help="Defaults to artifacts/world_models/<exp>/<env>/tf_initial_z")
     parser.add_argument("--env_name", default=config.get("env_name", "CarRacing-v0"))
     parser.add_argument("--exp_name", default=config.get("exp_name", "WorldModels"))
     parser.add_argument(

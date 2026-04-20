@@ -10,9 +10,11 @@ from PIL import Image
 import torch
 from transformers import AutoProcessor, Qwen3VLForConditionalGeneration
 
+from agile_wm.paths import default_qwen_model_dir
+from agile_wm.runtime import ensure_supported_cuda_device
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-DEFAULT_MODEL_DIR = SCRIPT_DIR / "qwen3-vl-8b-instruct"
+DEFAULT_MODEL_DIR = default_qwen_model_dir()
 MAX_NEW_TOKENS = 70
 
 PROMPT = """
@@ -97,55 +99,6 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def ensure_supported_cuda_device() -> None:
-    if not torch.cuda.is_available():
-        return
-
-    device = torch.device("cuda")
-    device_cc = torch.cuda.get_device_capability(device)
-    device_arch = f"sm_{device_cc[0]}{device_cc[1]}"
-    supported_arches = set(torch.cuda.get_arch_list())
-
-    def build_supports_device() -> bool:
-        if not supported_arches:
-            return True
-        if device_arch in supported_arches:
-            return True
-
-        supported_ccs: list[tuple[int, int]] = []
-        for arch in supported_arches:
-            if not arch.startswith("sm_"):
-                continue
-            suffix = arch.removeprefix("sm_")
-            if not suffix.isdigit():
-                continue
-            supported_ccs.append((int(suffix[:-1]), int(suffix[-1])))
-
-        return any(
-            major == device_cc[0] and minor <= device_cc[1]
-            for major, minor in supported_ccs
-        )
-
-    if not build_supports_device():
-        supported = ", ".join(sorted(supported_arches))
-        if device_cc[0] == 7:
-            recommendation = (
-                "Install a CUDA 12.4 PyTorch stack for sm_7x GPUs, for example "
-                "torch==2.6.0, torchvision==0.21.0, and torchaudio==2.6.0, "
-                "or use run_caption_array.sh to install a compatible build automatically."
-            )
-        else:
-            recommendation = (
-                "Install a PyTorch build that supports this GPU, or use run_caption_array.sh "
-                "to install a compatible build automatically."
-            )
-        raise RuntimeError(
-            "Installed PyTorch build is not compatible with the active GPU. "
-            f"Found {torch.cuda.get_device_name(device)} ({device_arch}), but this build only supports: {supported}. "
-            f"{recommendation}"
-        )
-
-
 def choose_model_dtype() -> Union[str, torch.dtype]:
     if not torch.cuda.is_available():
         return "auto"
@@ -163,7 +116,7 @@ def load_model_and_processor(model_dir: Path):
     if not model_dir.exists():
         raise FileNotFoundError(f"Local model directory does not exist: {model_dir}")
 
-    ensure_supported_cuda_device()
+    ensure_supported_cuda_device(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
     model_dtype = choose_model_dtype()
 
     t0 = time.time()

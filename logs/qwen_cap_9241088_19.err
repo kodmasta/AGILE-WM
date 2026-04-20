@@ -1,57 +1,0 @@
-[=== Module python/3.10 loaded ===]
-/home/mila/h/hengh/CODE/AGILE-WM/.venv/lib/python3.13/site-packages/torch/cuda/__init__.py:371: UserWarning: Found GPU0 Tesla V100-SXM2-32GB which is of compute capability (CC) 7.0.
-The following list shows the CCs this version of PyTorch was built for and the hardware CCs it supports:
-- 7.5 which supports hardware CC >=7.5,<8.0
-- 8.0 which supports hardware CC >=8.0,<9.0 except {8.7}
-- 8.6 which supports hardware CC >=8.6,<9.0 except {8.7}
-- 9.0 which supports hardware CC >=9.0,<10.0
-- 10.0 which supports hardware CC >=10.0,<11.0 except {10.1}
-- 12.0 which supports hardware CC >=12.0,<13.0
-Please follow the instructions at https://pytorch.org/get-started/locally/ to install a PyTorch release that supports one of these CUDA versions: 12.6, 12.8
-  _warn_unsupported_code(d, device_cc, code_ccs)
-Loading weights:   0%|          | 0/750 [00:00<?, ?it/s]Loading weights:   0%|          | 1/750 [00:02<33:11,  2.66s/it]Loading weights:   1%|          | 4/750 [00:02<06:38,  1.87it/s]Loading weights:   1%|          | 6/750 [00:02<04:20,  2.85it/s]Loading weights:   2%|▏         | 13/750 [00:03<01:29,  8.27it/s]Loading weights:   2%|▏         | 17/750 [00:03<01:19,  9.17it/s]Loading weights:   3%|▎         | 25/750 [00:03<00:48, 14.87it/s]Loading weights:   4%|▎         | 28/750 [00:03<00:49, 14.54it/s]Loading weights:   5%|▍         | 35/750 [00:03<00:33, 21.56it/s]Loading weights:   5%|▌         | 39/750 [00:04<00:40, 17.72it/s]Loading weights:   6%|▌         | 46/750 [00:04<00:28, 24.87it/s]Loading weights:   7%|▋         | 51/750 [00:04<00:34, 20.46it/s]Loading weights:   8%|▊         | 58/750 [00:04<00:25, 27.46it/s]Loading weights:   8%|▊         | 63/750 [00:05<00:31, 21.85it/s]Loading weights:   9%|▉         | 70/750 [00:05<00:31, 21.84it/s]Loading weights:  10%|▉         | 74/750 [00:05<00:28, 23.88it/s]Loading weights:  11%|█         | 81/750 [00:05<00:25, 26.72it/s]Loading weights:  11%|█▏        | 85/750 [00:06<00:27, 23.97it/s]Loading weights:  12%|█▏        | 91/750 [00:06<00:26, 25.04it/s]Loading weights:  13%|█▎        | 94/750 [00:06<00:30, 21.53it/s]Loading weights:  14%|█▎        | 103/750 [00:06<00:23, 28.03it/s]Loading weights:  14%|█▍        | 106/750 [00:06<00:27, 23.14it/s]Loading weights:  15%|█▌        | 113/750 [00:07<00:20, 30.71it/s]Loading weights:  16%|█▌        | 117/750 [00:07<00:28, 22.24it/s]Loading weights:  17%|█▋        | 124/750 [00:07<00:21, 29.66it/s]Loading weights:  17%|█▋        | 129/750 [00:07<00:26, 23.44it/s]Loading weights:  18%|█▊        | 136/750 [00:08<00:23, 26.32it/s]Loading weights:  19%|█▊        | 140/750 [00:08<00:25, 23.52it/s]Loading weights:  19%|█▉        | 145/750 [00:08<00:21, 27.70it/s]Loading weights:  20%|█▉        | 149/750 [00:08<00:29, 20.24it/s]Loading weights:  21%|██        | 158/750 [00:08<00:22, 26.64it/s]Loading weights:  22%|██▏       | 162/750 [00:09<00:24, 24.08it/s]Loading weights:  23%|██▎       | 169/750 [00:09<00:21, 26.97it/s]Loading weights:  23%|██▎       | 173/750 [00:09<00:23, 24.17it/s]Loading weights:  24%|██▎       | 178/750 [00:09<00:20, 28.19it/s]Loading weights:  24%|██▍       | 182/750 [00:10<00:27, 20.85it/s]Loading weights:  25%|██▌       | 191/750 [00:10<00:20, 27.04it/s]Loading weights:  26%|██▌       | 195/750 [00:10<00:22, 24.16it/s]Loading weights:  27%|██▋       | 200/750 [00:10<00:19, 27.81it/s]Loading weights:  27%|██▋       | 204/750 [00:10<00:26, 20.92it/s]Loading weights:  28%|██▊       | 213/750 [00:11<00:19, 27.09it/s]Loading weights:  29%|██▉       | 217/750 [00:11<00:22, 23.95it/s]Loading weights:  30%|██▉       | 224/750 [00:11<00:19, 26.33it/s]Loading weights:  30%|███       | 227/750 [00:11<00:23, 22.14it/s]Loading weights:  31%|███▏      | 235/750 [00:12<00:19, 26.94it/s]Loading weights:  32%|███▏      | 238/750 [00:12<00:22, 22.62it/s]Loading weights:  33%|███▎      | 244/750 [00:12<00:17, 28.32it/s]Loading weights:  33%|███▎      | 248/750 [00:12<00:23, 21.08it/s]Loading weights:  34%|███▍      | 255/750 [00:12<00:17, 28.57it/s]Loading weights:  35%|███▍      | 259/750 [00:13<00:23, 21.07it/s]Loading weights:  36%|███▌      | 268/750 [00:13<00:17, 27.06it/s]Loading weights:  36%|███▋      | 272/750 [00:13<00:19, 24.00it/s]Loading weights:  37%|███▋      | 279/750 [00:13<00:17, 26.68it/s]Loading weights:  38%|███▊      | 283/750 [00:14<00:19, 23.60it/s]Loading weights:  38%|███▊      | 288/750 [00:14<00:16, 27.61it/s]Loading weights:  39%|███▉      | 292/750 [00:14<00:22, 20.74it/s]Loading weights:  40%|████      | 300/750 [00:14<00:17, 25.26it/s]Loading weights:  40%|████      | 303/750 [00:14<00:20, 21.81it/s]Loading weights:  41%|████▏     | 310/750 [00:15<00:15, 29.30it/s]Loading weights:  42%|████▏     | 314/750 [00:15<00:20, 21.49it/s]Loading weights:  43%|████▎     | 322/750 [00:15<00:16, 26.08it/s]Loading weights:  43%|████▎     | 326/750 [00:15<00:18, 23.55it/s]Loading weights:  44%|████▍     | 332/750 [00:15<00:14, 29.25it/s]Loading weights:  45%|████▍     | 336/750 [00:16<00:19, 21.58it/s]Loading weights:  46%|████▌     | 343/750 [00:16<00:14, 28.84it/s]Loading weights:  46%|████▋     | 348/750 [00:16<00:17, 22.92it/s]Loading weights:  47%|████▋     | 354/750 [00:16<00:13, 28.41it/s]Loading weights:  48%|████▊     | 359/750 [00:17<00:17, 22.90it/s]Loading weights:  49%|████▊     | 365/750 [00:17<00:13, 28.35it/s]Loading weights:  49%|████▉     | 370/750 [00:17<00:16, 22.85it/s]Loading weights:  50%|█████     | 378/750 [00:17<00:13, 27.21it/s]Loading weights:  51%|█████     | 382/750 [00:18<00:15, 24.10it/s]Loading weights:  52%|█████▏    | 387/750 [00:18<00:13, 27.84it/s]Loading weights:  52%|█████▏    | 391/750 [00:18<00:17, 21.08it/s]Loading weights:  53%|█████▎    | 398/750 [00:18<00:12, 28.53it/s]Loading weights:  57%|█████▋    | 429/750 [00:18<00:04, 79.05it/s]Loading weights:  61%|██████▏   | 460/750 [00:18<00:02, 125.73it/s]Loading weights:  66%|██████▌   | 493/750 [00:18<00:01, 170.29it/s]Loading weights:  70%|███████   | 526/750 [00:19<00:01, 203.94it/s]Loading weights:  75%|███████▍  | 561/750 [00:19<00:00, 240.44it/s]Loading weights:  79%|███████▉  | 595/750 [00:19<00:00, 260.79it/s]Loading weights:  84%|████████▎ | 627/750 [00:19<00:00, 273.99it/s]Loading weights:  88%|████████▊ | 659/750 [00:19<00:00, 279.13it/s]Loading weights:  92%|█████████▏| 692/750 [00:19<00:00, 285.04it/s]Loading weights:  97%|█████████▋| 725/750 [00:19<00:00, 238.30it/s]Loading weights: 100%|██████████| 750/750 [00:20<00:00, 37.46it/s] 
-The following generation flags are not valid and may be ignored: ['temperature', 'top_p', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
-Traceback (most recent call last):
-  File "/home/mila/h/hengh/CODE/AGILE-WM/caption_shard.py", line 294, in <module>
-    main()
-    ~~~~^^
-  File "/home/mila/h/hengh/CODE/AGILE-WM/caption_shard.py", line 283, in main
-    process_shard(
-    ~~~~~~~~~~~~~^
-        shard_path=args.shard_path,
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<3 lines>...
-        max_new_tokens=args.max_new_tokens,
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "/home/mila/h/hengh/CODE/AGILE-WM/caption_shard.py", line 237, in process_shard
-    caption = caption_one_image(
-        model=model,
-    ...<3 lines>...
-        max_new_tokens=max_new_tokens,
-    )
-  File "/home/mila/h/hengh/CODE/AGILE-WM/caption_shard.py", line 177, in caption_one_image
-    generated_ids = model.generate(
-        **inputs,
-        max_new_tokens=max_new_tokens,
-        do_sample=False,
-    )
-  File "/home/mila/h/hengh/CODE/AGILE-WM/.venv/lib/python3.13/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-    return func(*args, **kwargs)
-  File "/home/mila/h/hengh/CODE/AGILE-WM/.venv/lib/python3.13/site-packages/transformers/generation/utils.py", line 2401, in generate
-    self._prepare_special_tokens(generation_config, kwargs_has_attention_mask, device=device)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/mila/h/hengh/CODE/AGILE-WM/.venv/lib/python3.13/site-packages/transformers/generation/utils.py", line 1972, in _prepare_special_tokens
-    if eos_token_tensor is not None and torch.isin(eos_token_tensor, pad_token_tensor).any():
-                                        ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-torch.AcceleratorError: CUDA error: no kernel image is available for execution on the device
-Search for `cudaErrorNoKernelImageForDevice' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
-CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
-For debugging consider passing CUDA_LAUNCH_BLOCKING=1
-Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
-
-/etc/slurm/slurmtask_epilog: line 26: ${OUT_FILE}: ambiguous redirect
-/etc/slurm/slurmtask_epilog: line 27: ${OUT_FILE}: ambiguous redirect
-/etc/slurm/slurmtask_epilog: line 28: ${OUT_FILE}: ambiguous redirect
-[2026-04-12T09:14:34.976] error: --task-epilog failed status=1
